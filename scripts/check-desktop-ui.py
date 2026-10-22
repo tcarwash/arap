@@ -548,7 +548,7 @@ def main() -> int:
                     setattr(app, name, None)
             root.update_idletasks()
             root.destroy()
-        print("Tk desktop exercised content and PixelQSO proofs, one-way and mutual challenge authentication including replay rejection, and keyserver publication, resolution, trust disable/re-enable and content edits.")
+        print("Tk desktop exercised content and PixelQSO proofs, one-way and mutual challenge authentication including replay rejection, endorsement issue/chain assembly/explicit-root verification, and keyserver publication, resolution, trust disable/re-enable and content edits.")
     return 0
 
 

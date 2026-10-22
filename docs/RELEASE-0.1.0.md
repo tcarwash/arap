@@ -157,7 +157,13 @@ certificate/policy gates below.
   and race-tested replay/rollback behavior exist. The Python wrapper now exercises
   one-way and mutual flows, including cancellation of pending requests, retention
   after consumption, replay and atomic pair consumption, against the built CLI;
-  a separately maintained consumer review remains.
+  an independent Python-generated inverse-request/two-response vector is checked
+  byte-for-byte and accepted by Go under explicit trust, while wrong-session and
+  repeated-nonce cases are rejected. A separately maintained consumer review remains.
+- The Tk desktop now provides endorsement issuance, root-to-subject chain
+  assembly, and explicit-root chain verification. The desktop smoke exercises
+  each CLI argument path, including purpose lists and passphrase stdin; native
+  manual interaction remains unverified.
 - A versioned Python wrapper API now covers content, PixelQSO, one-way and mutual
   challenge, endorsement, and experimental LoTW enrollment operations. Its
   integration tests build the local CLI and verify byte proof exchange, policy

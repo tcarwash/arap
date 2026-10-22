@@ -479,3 +479,10 @@ diagnostic and that an incorrect ARAP key password is rejected.
 the desktop Xvfb smoke, and `git diff --check` passed after the helper-resolution
 change. A subsequent `make race` and CGO-free `go build ./...` for Linux
 amd64/arm64, macOS amd64/arm64, and Windows amd64 also passed.
+
+The mutual challenge fixture now contains Python-generated inverse requests and
+both signed responses. `make vectors`, `make cddl`, the Go pair verifier, and
+negative checks for session mismatch and reused nonce passed. The desktop now
+exposes endorsement issue, ordered chain assembly, and explicit-root
+verification; Python syntax compilation and the Xvfb desktop smoke passed with
+all three CLI paths exercised using a mocked CLI. No live certificate was used.
