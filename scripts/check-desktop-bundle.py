@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import sys
 import json
+import csv
+import io
 import posixpath
 import re
 import subprocess
@@ -54,6 +56,8 @@ def main() -> int:
     }
     if target == "linux-amd64" or enrollment:
         required |= {f"arap-tqsl-sign{executable_suffix}", "config.xml", "TQSLLIB-LICENSE.txt"}
+        if enrollment:
+            required.add("GO-DEPENDENCY-NOTICES.csv")
         if target.startswith("linux-"):
             required.add("libtqsllib.so")
         elif enrollment and target.startswith("darwin-"):
@@ -106,6 +110,12 @@ def main() -> int:
             if "American Radio Relay League" not in license_text or "Redistribution" not in license_text:
                 raise SystemExit("TQSLLIB redistribution notice is incomplete")
         if enrollment:
+            report = list(csv.reader(io.StringIO(bundle.read("GO-DEPENDENCY-NOTICES.csv").decode("utf-8"))))
+            notice_files = [name for name in names if name.startswith("GO-DEPENDENCY-NOTICES/") and not name.endswith("/")]
+            if not report or any(len(row) < 3 or not row[0] or not row[1] or not row[2] or row[2].lower() == "unknown" for row in report):
+                raise SystemExit("Go dependency license report is empty or contains incomplete entries")
+            if len(notice_files) < len(report):
+                raise SystemExit("Go dependency notice files do not cover every reported dependency")
             with tempfile.TemporaryDirectory(prefix="arap-helper-smoke-") as temp:
                 helper_name = f"arap-tqsl-sign{executable_suffix}"
                 bundle.extract(helper_name, temp)

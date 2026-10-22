@@ -96,6 +96,12 @@ if [[ -n "${ARAP_TQSL_HELPER_DIR:-}" ]]; then
   cp "$helper_dir/$helper_name" "$stage/"
   cp "$helper_dir/config.xml" "$stage/"
   cp "$helper_dir/TQSLLIB-LICENSE.txt" "$stage/"
+  if [[ -d "$helper_dir/GO-DEPENDENCY-NOTICES" ]]; then
+    cp -R "$helper_dir/GO-DEPENDENCY-NOTICES" "$stage/"
+  fi
+  if [[ -f "$helper_dir/GO-DEPENDENCY-NOTICES.csv" ]]; then
+    cp "$helper_dir/GO-DEPENDENCY-NOTICES.csv" "$stage/"
+  fi
   if [[ -f "$helper_dir/OPENSSL-LICENSE.txt" ]]; then cp "$helper_dir/OPENSSL-LICENSE.txt" "$stage/"; fi
   if [[ -f "$helper_dir/VCPKG-DEPENDENCY-NOTICES.txt" ]]; then cp "$helper_dir/VCPKG-DEPENDENCY-NOTICES.txt" "$stage/"; fi
   if [[ -f "$helper_dir/libtqsllib.so" ]]; then cp "$helper_dir/libtqsllib.so" "$stage/"; fi

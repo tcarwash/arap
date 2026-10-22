@@ -16,7 +16,10 @@ evidence for ARAP; it is not an ARRL-approved login or LoTW transaction.
 
 The native enrollment build matrix targets Linux amd64/arm64, macOS amd64/arm64
 and Windows amd64. Check the release notes for which native builds have passed
-hosted validation.
+hosted validation. Supported bundles include Go dependency license texts in
+`GO-DEPENDENCY-NOTICES/` and a versioned license report in
+`GO-DEPENDENCY-NOTICES.csv`; macOS and Windows also include their native helper
+dependency notices.
 
 ## Start the desktop app
 

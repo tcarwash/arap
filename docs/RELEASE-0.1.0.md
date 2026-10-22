@@ -279,9 +279,11 @@ the promised enrollment beta rather than being silently removed from its scope.
   tree; standard shared Linux runtime libraries remain host prerequisites.
 - [ ] Complete the redistribution notice inventory for every bundled
   dependency and have the project owner select the project license. The native
-  packaging now includes the TQSLLIB notice and gathers OpenSSL/Expat or vcpkg
-  notices for macOS and Windows. Confirm those notice sets against the hosted
-  artifacts and finish the project license decision.
+  packaging now includes the TQSLLIB notice, collects versioned Go module
+  notices, and gathers OpenSSL/Expat or vcpkg notices for macOS and Windows.
+  The archive checker verifies the Go report and license files. Confirm each
+  platform notice set against hosted artifacts and add the selected project
+  license before publication.
 - [x] Add version/commit reporting to both executables and the desktop About
   view. Linux amd64 archive checks compare CLI/keyserver JSON version reports
   against the build manifest; native desktop smoke repeats this on macOS and

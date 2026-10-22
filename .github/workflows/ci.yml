@@ -276,6 +276,12 @@ jobs:
           export ARAP_TQSL_STATIC="${{ matrix.tqsl-static }}"
           export ARAP_OPENSSL_STATIC="${{ matrix.openssl-static }}"
           ./tqsl-helper/build.sh .trustedqsl-source "$helper_dir"
+          go run github.com/google/go-licenses/v2@v2.0.1 save \
+            ./cmd/arap ./cmd/arap-keyserver --ignore github.com/tcarwash/arap \
+            --save_path="$helper_dir/GO-DEPENDENCY-NOTICES"
+          go run github.com/google/go-licenses/v2@v2.0.1 report \
+            ./cmd/arap ./cmd/arap-keyserver --ignore github.com/tcarwash/arap \
+            > "$helper_dir/GO-DEPENDENCY-NOTICES.csv"
           if [[ "${{ matrix.runner-os }}" == darwin ]]; then
             python3 scripts/bundle-macos-dylibs.py "$helper_dir/arap-tqsl-sign"
             python3 scripts/collect-tqsl-dependency-notices.py \
