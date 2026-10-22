@@ -82,6 +82,56 @@ def main() -> int:
             if ("requester / verifier" not in challenge_text or "responder" not in challenge_text
                     or "mutual authentication" not in challenge_text):
                 raise SystemExit("challenge workflow role guidance is missing")
+            app.select_tab("Endorsements")
+            endorsement_id = next(tab_id for tab_id in app.tabs.tabs()
+                                  if app.tabs.tab(tab_id, "text") == "Endorsements")
+            endorsement_text = " ".join(widget_texts(root.nametowidget(endorsement_id))).lower()
+            if "explicit root" not in endorsement_text or "verify chain" not in endorsement_text:
+                raise SystemExit("endorsement trust guidance or verification controls are missing")
+            app.endorse_issuer.set("K7ABC")
+            app.endorse_private.set("issuer.age")
+            app.endorse_subject.set("AG7SU")
+            app.endorse_subject_public.set("subject.pem")
+            app.endorse_purposes.set("content-signature, challenge-response")
+            app.endorse_depth.set("1")
+            app.endorse_days.set("30")
+            app.endorse_output.set("endorsement.cose")
+            endorsement_calls: list[list[str]] = []
+            original_run_cli = app.run_cli
+            original_report = app._report
+            original_ask_passphrase = app._ask_passphrase
+            app.run_cli = lambda args, *rest, **kwargs: (endorsement_calls.append(args) or 0, "{}")
+            app._report = lambda *_args, **_kwargs: None
+            app._ask_passphrase = lambda *_args, **_kwargs: "test-only-passphrase"
+            try:
+                app.issue_endorsement()
+            finally:
+                app.run_cli = original_run_cli
+                app._report = original_report
+                app._ask_passphrase = original_ask_passphrase
+            if (not endorsement_calls or endorsement_calls[0][:2] != ["endorsement", "issue"]
+                    or endorsement_calls[0].count("--purpose") != 2
+                    or "--passphrase-stdin" not in endorsement_calls[0]):
+                raise SystemExit("desktop endorsement issue did not pass purpose and secret safely to the CLI")
+            app.endorse_chain.set("chain.cbor")
+            app.endorse_root_call.set("K7ABC")
+            app.endorse_root_public.set("root.pem")
+            app.endorse_root_purposes.set("content-signature, key-endorsement")
+            app.endorse_root_depth.set("2")
+            app.endorse_expected_subject.set("AG7SU")
+            app.endorse_expected_public.set("subject.pem")
+            app.endorse_verify_purpose.set("content-signature")
+            verification_calls: list[list[str]] = []
+            app.run_cli = lambda args, *rest, **kwargs: (verification_calls.append(args) or 0,
+                                                         json.dumps({"accepted": True, "subject": "AG7SU"}))
+            try:
+                app.verify_endorsement()
+            finally:
+                app.run_cli = original_run_cli
+            if (not verification_calls or verification_calls[0][:2] != ["endorsement", "verify"]
+                    or verification_calls[0].count("--root-purpose") != 2
+                    or "--subject-public-key" not in verification_calls[0]):
+                raise SystemExit("desktop endorsement verification did not pass explicit root and subject policy")
             app.select_tab("Start here")
             sample_binding = {
                 "callsign": "N0CALL", "key_id_sha256": "a" * 64,

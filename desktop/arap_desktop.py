@@ -94,6 +94,7 @@ class ARAPDesktop:
         self._server_tab()
         self._verify_reference_tab()
         self._challenge_tab()
+        self._endorsement_tab()
         ttk.Separator(shell).pack(fill="x", pady=(10, 6))
         ttk.Label(shell, textvariable=self.status, style="Sub.TLabel").pack(anchor="w")
 
@@ -266,6 +267,7 @@ class ARAPDesktop:
             ("2. Sign content", "Create a detached proof over the exact file bytes, media type, and application context.", "Sign content"),
             ("3. Verify content", "Check the proof against the original file, expected context, public key, and your trust policy.", "Verify"),
             ("4. Authenticate a peer", "Requester/verifier issues and stores a challenge; responder signs it; requester/verifier checks and consumes it once.", "Challenge"),
+            ("5. Evaluate endorsements", "Issue purpose-scoped key endorsements or verify a chain from a root you trust.", "Endorsements"),
             ("PixelQSO cards", "Sign or verify canonical saved-card data. Frame 2 requires its matching first-frame card.", "PixelQSO cards"),
         )
         for row, (title, description, destination) in enumerate(steps, start=2):
@@ -278,12 +280,12 @@ class ARAPDesktop:
             ttk.Button(tab, text="Open", command=lambda name=destination: self.select_tab(name)).grid(
                 row=row, column=2, sticky="e", padx=(12, 0), pady=8
             )
-        ttk.Separator(tab).grid(row=7, column=0, columnspan=3, sticky="ew", pady=12)
+        ttk.Separator(tab).grid(row=8, column=0, columnspan=3, sticky="ew", pady=12)
         ttk.Label(
             tab,
             text="Callsign Certificate enrollment is in Keys & Trust. It binds a fresh challenge to the chosen ARAP key fingerprint and verifier audience; choose a matching current TQSL certificate serial before signing. This RSA-SHA1 assertion provides authentication evidence for ARAP; it is not an ARRL-approved login or LoTW transaction.",
             style="Sub.TLabel", wraplength=760, justify="left",
-        ).grid(row=8, column=0, columnspan=3, sticky="w")
+        ).grid(row=9, column=0, columnspan=3, sticky="w")
         tab.columnconfigure(1, weight=1)
 
     def select_tab(self, label: str) -> None:
@@ -510,6 +512,88 @@ class ARAPDesktop:
         if not bases or len(bases) > 8:
             raise ValueError("Enter between one and eight keyserver URLs.")
         return list(dict.fromkeys(self._validate_server_base(base) for base in bases))
+
+    def _endorsement_tab(self) -> None:
+        tab = ttk.Frame(self.tabs)
+        self.tabs.add(tab, text="Endorsements")
+        body = self._form(tab)
+        ttk.Label(body, text="Issue and evaluate portable, purpose-limited key endorsements. Verification starts from an explicit root you trust; receiving a chain does not establish trust by itself.", style="Sub.TLabel", wraplength=720, justify="left").grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 12))
+        ttk.Label(body, text="Issue an endorsement", font=("TkDefaultFont", 11, "bold")).grid(row=1, column=0, columnspan=2, sticky="w", pady=(4, 2))
+        self._entry(body, 2, "Issuer callsign", "endorse_issuer")
+        self._entry(body, 3, "Issuer private key", "endorse_private", browse="open")
+        self._entry(body, 4, "Subject callsign", "endorse_subject")
+        self._entry(body, 5, "Subject public key", "endorse_subject_public", browse="open")
+        self._entry(body, 6, "Delegated purposes (comma separated)", "endorse_purposes", "content-signature")
+        self._entry(body, 7, "Maximum delegation depth", "endorse_depth", "0")
+        self._entry(body, 8, "Lifetime (days)", "endorse_days", "30")
+        self._entry(body, 9, "Output proof", "endorse_output", browse="save")
+        self._action(body, 10, "Issue endorsement", self.issue_endorsement)
+        ttk.Separator(body).grid(row=11, column=0, columnspan=3, sticky="ew", pady=14)
+        ttk.Label(body, text="Verify an endorsement chain", font=("TkDefaultFont", 11, "bold")).grid(row=12, column=0, columnspan=2, sticky="w", pady=(0, 2))
+        self._entry(body, 13, "Encoded chain", "endorse_chain", browse="open")
+        self._entry(body, 14, "Trusted root callsign", "endorse_root_call")
+        self._entry(body, 15, "Trusted root public key", "endorse_root_public", browse="open")
+        self._entry(body, 16, "Root allowed purposes (comma separated)", "endorse_root_purposes", "content-signature,key-endorsement")
+        self._entry(body, 17, "Root maximum delegation depth", "endorse_root_depth", "2")
+        self._entry(body, 18, "Expected subject callsign", "endorse_expected_subject")
+        self._entry(body, 19, "Expected subject public key", "endorse_expected_public", browse="open")
+        self._entry(body, 20, "Purpose to evaluate", "endorse_verify_purpose", "content-signature")
+        self._entry(body, 21, "Optional disabled-key trust store", "endorse_disabled_store", browse="open")
+        self._action(body, 22, "Verify chain", self.verify_endorsement)
+        self.endorsement_result = tk.Text(body, height=8, wrap="word", state="disabled", background="#f4f7fb", relief="flat")
+        self.endorsement_result.grid(row=23, column=0, columnspan=3, sticky="nsew", pady=(12, 0))
+        body.rowconfigure(23, weight=1)
+
+    @staticmethod
+    def _purpose_list(raw: str, label: str) -> list[str]:
+        values = list(dict.fromkeys(part.strip() for part in raw.split(",") if part.strip()))
+        if not values:
+            raise ValueError(f"Enter at least one {label}.")
+        return values
+
+    def issue_endorsement(self) -> None:
+        try:
+            issuer, key, subject, subject_key, output = (self.endorse_issuer.get().strip(), self.endorse_private.get().strip(), self.endorse_subject.get().strip(), self.endorse_subject_public.get().strip(), self.endorse_output.get().strip())
+            if not all((issuer, key, subject, subject_key, output)):
+                raise ValueError("Complete the issuer, key, subject, subject key, and output fields.")
+            purposes = self._purpose_list(self.endorse_purposes.get(), "delegated purpose")
+            depth, days = int(self.endorse_depth.get()), int(self.endorse_days.get())
+            if not 0 <= depth <= 8 or not 1 <= days <= 365:
+                raise ValueError("Delegation depth must be 0–8 and lifetime 1–365 days.")
+            args = ["endorsement", "issue", "--key", key, "--callsign", issuer, "--subject", subject, "--subject-public-key", subject_key, "--max-delegation-depth", str(depth), "--expires-in", str(days * 86400), "--out", output]
+            for purpose in purposes:
+                args.extend(["--purpose", purpose])
+            args.append("--passphrase-stdin")
+            passphrase = self._ask_passphrase("Unlock endorsement key")
+            _, result = self.run_cli(args, input_text=passphrase + "\n")
+            self._report("Endorsement issued", f"Saved to {output}\n\n{result}")
+        except Exception as exc:
+            self._error(exc)
+
+    def verify_endorsement(self) -> None:
+        try:
+            chain, root_call, root_key, subject, subject_key, purpose = (self.endorse_chain.get().strip(), self.endorse_root_call.get().strip(), self.endorse_root_public.get().strip(), self.endorse_expected_subject.get().strip(), self.endorse_expected_public.get().strip(), self.endorse_verify_purpose.get().strip())
+            if not all((chain, root_call, root_key, subject, subject_key, purpose)):
+                raise ValueError("Complete the chain, trusted root, expected subject, and purpose fields.")
+            root_purposes = self._purpose_list(self.endorse_root_purposes.get(), "root allowed purpose")
+            root_depth = int(self.endorse_root_depth.get())
+            if not 0 <= root_depth <= 8:
+                raise ValueError("Root maximum delegation depth must be 0–8.")
+            args = ["endorsement", "verify", "--chain", chain, "--root-callsign", root_call, "--root-public-key", root_key, "--root-max-delegation-depth", str(root_depth), "--subject", subject, "--subject-public-key", subject_key, "--purpose", purpose]
+            for allowed in root_purposes:
+                args.extend(["--root-purpose", allowed])
+            disabled = self.endorse_disabled_store.get().strip()
+            if disabled:
+                args.extend(["--disabled-trust-store", disabled])
+            _, output = self.run_cli(args, (0, 1))
+            result = json.loads(output)
+            self.endorsement_result.configure(state="normal")
+            self.endorsement_result.delete("1.0", "end")
+            self.endorsement_result.insert("1.0", json.dumps(result, indent=2))
+            self.endorsement_result.configure(state="disabled")
+            self.status.set(f"Endorsement: {'accepted' if result.get('accepted') else 'rejected'} — {result.get('reason', 'verified')}")
+        except Exception as exc:
+            self._error(exc)
 
     def _challenge_tab(self) -> None:
         tab = ttk.Frame(self.tabs)
