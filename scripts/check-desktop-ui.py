@@ -113,6 +113,20 @@ def main() -> int:
                     or endorsement_calls[0].count("--purpose") != 2
                     or "--passphrase-stdin" not in endorsement_calls[0]):
                 raise SystemExit("desktop endorsement issue did not pass purpose and secret safely to the CLI")
+            app.endorse_chain_links.set("root-link.cose, delegate-link.cose")
+            app.endorse_chain_output.set("chain.cbor")
+            assembly_calls: list[list[str]] = []
+            app.run_cli = lambda args, *rest, **kwargs: (assembly_calls.append(args) or 0, "{}")
+            app._report = lambda *_args, **_kwargs: None
+            try:
+                app.pack_endorsement_chain()
+            finally:
+                app.run_cli = original_run_cli
+                app._report = original_report
+            if (not assembly_calls or assembly_calls[0][:2] != ["endorsement", "pack"]
+                    or assembly_calls[0].count("--link") != 2
+                    or app.endorse_chain.get() != "chain.cbor"):
+                raise SystemExit("desktop endorsement chain assembly did not preserve ordered links")
             app.endorse_chain.set("chain.cbor")
             app.endorse_root_call.set("K7ABC")
             app.endorse_root_public.set("root.pem")

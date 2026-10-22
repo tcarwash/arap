@@ -529,20 +529,26 @@ class ARAPDesktop:
         self._entry(body, 9, "Output proof", "endorse_output", browse="save")
         self._action(body, 10, "Issue endorsement", self.issue_endorsement)
         ttk.Separator(body).grid(row=11, column=0, columnspan=3, sticky="ew", pady=14)
-        ttk.Label(body, text="Verify an endorsement chain", font=("TkDefaultFont", 11, "bold")).grid(row=12, column=0, columnspan=2, sticky="w", pady=(0, 2))
-        self._entry(body, 13, "Encoded chain", "endorse_chain", browse="open")
-        self._entry(body, 14, "Trusted root callsign", "endorse_root_call")
-        self._entry(body, 15, "Trusted root public key", "endorse_root_public", browse="open")
-        self._entry(body, 16, "Root allowed purposes (comma separated)", "endorse_root_purposes", "content-signature,key-endorsement")
-        self._entry(body, 17, "Root maximum delegation depth", "endorse_root_depth", "2")
-        self._entry(body, 18, "Expected subject callsign", "endorse_expected_subject")
-        self._entry(body, 19, "Expected subject public key", "endorse_expected_public", browse="open")
-        self._entry(body, 20, "Purpose to evaluate", "endorse_verify_purpose", "content-signature")
-        self._entry(body, 21, "Optional disabled-key trust store", "endorse_disabled_store", browse="open")
-        self._action(body, 22, "Verify chain", self.verify_endorsement)
+        ttk.Label(body, text="Assemble a chain", font=("TkDefaultFont", 11, "bold")).grid(row=12, column=0, columnspan=2, sticky="w", pady=(0, 2))
+        ttk.Label(body, text="Enter signed proof paths in root-to-subject order, separated by commas.", style="Sub.TLabel", wraplength=620).grid(row=13, column=0, columnspan=3, sticky="w")
+        self._entry(body, 14, "Ordered proof files", "endorse_chain_links")
+        self._entry(body, 15, "Output encoded chain", "endorse_chain_output", browse="save")
+        self._action(body, 16, "Assemble chain", self.pack_endorsement_chain)
+        ttk.Separator(body).grid(row=17, column=0, columnspan=3, sticky="ew", pady=14)
+        ttk.Label(body, text="Verify an endorsement chain", font=("TkDefaultFont", 11, "bold")).grid(row=18, column=0, columnspan=2, sticky="w", pady=(0, 2))
+        self._entry(body, 19, "Encoded chain", "endorse_chain", browse="open")
+        self._entry(body, 20, "Trusted root callsign", "endorse_root_call")
+        self._entry(body, 21, "Trusted root public key", "endorse_root_public", browse="open")
+        self._entry(body, 22, "Root allowed purposes (comma separated)", "endorse_root_purposes", "content-signature,key-endorsement")
+        self._entry(body, 23, "Root maximum delegation depth", "endorse_root_depth", "2")
+        self._entry(body, 24, "Expected subject callsign", "endorse_expected_subject")
+        self._entry(body, 25, "Expected subject public key", "endorse_expected_public", browse="open")
+        self._entry(body, 26, "Purpose to evaluate", "endorse_verify_purpose", "content-signature")
+        self._entry(body, 27, "Optional disabled-key trust store", "endorse_disabled_store", browse="open")
+        self._action(body, 28, "Verify chain", self.verify_endorsement)
         self.endorsement_result = tk.Text(body, height=8, wrap="word", state="disabled", background="#f4f7fb", relief="flat")
-        self.endorsement_result.grid(row=23, column=0, columnspan=3, sticky="nsew", pady=(12, 0))
-        body.rowconfigure(23, weight=1)
+        self.endorsement_result.grid(row=29, column=0, columnspan=3, sticky="nsew", pady=(12, 0))
+        body.rowconfigure(29, weight=1)
 
     @staticmethod
     def _purpose_list(raw: str, label: str) -> list[str]:
@@ -567,6 +573,22 @@ class ARAPDesktop:
             passphrase = self._ask_passphrase("Unlock endorsement key")
             _, result = self.run_cli(args, input_text=passphrase + "\n")
             self._report("Endorsement issued", f"Saved to {output}\n\n{result}")
+        except Exception as exc:
+            self._error(exc)
+
+    def pack_endorsement_chain(self) -> None:
+        try:
+            links = [item.strip() for item in self.endorse_chain_links.get().split(",") if item.strip()]
+            output = self.endorse_chain_output.get().strip()
+            if not links or not output:
+                raise ValueError("Enter ordered proof files and an output chain path.")
+            args = ["endorsement", "pack"]
+            for link in links:
+                args.extend(["--link", link])
+            args.extend(["--out", output])
+            _, result = self.run_cli(args)
+            self.endorse_chain.set(output)
+            self._report("Endorsement chain assembled", f"Saved to {output}\n\n{result}")
         except Exception as exc:
             self._error(exc)
 
