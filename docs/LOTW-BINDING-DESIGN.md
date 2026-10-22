@@ -40,9 +40,9 @@ to enroll an ARAP key.
 
 The TQSL signature is a narrowly scoped enrollment assertion. It is not an
 ARAP COSE signature, a content signature, or evidence that LoTW accepted an
-ARAP assertion. The result should be worded as verification of possession of
-an ARRL-issued LoTW Callsign Certificate, with certificate status reported
-separately.
+ARAP assertion. The resulting callsign certificate and status are
+authentication evidence under ARAP policy only; they do not represent an
+ARRL-approved login, endorsement, or LoTW authentication mechanism.
 
 ## Why a `.tq8` file is not the enrollment proof
 

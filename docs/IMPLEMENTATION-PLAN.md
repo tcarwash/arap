@@ -77,7 +77,7 @@ Library verification must not implicitly access a network, read a user's key dir
 
 The challenge schema is frozen for the prototype in M2. Certificate and endorsement schemas remain separate profiles. Document supported-purpose boundaries so reserving wire version 1 does not imply every draft purpose exists.
 
-TQSL is not a signer provider in the current profile. Software Ed25519 keys use public SPKI PEM, private PKCS#8 PEM and SHA-256 SPKI fingerprints. Never include private keys in proofs or non-test fixtures. Any future TQSL certificate binding must not imply that TQSL's current SHA-1 signing API authenticated the ARAP key.
+TQSL is not a signer provider in the current content/challenge profile. Software Ed25519 keys use public SPKI PEM, private PKCS#8 PEM and SHA-256 SPKI fingerprints. Never include private keys in proofs or non-test fixtures. The separate TQSL enrollment assertion binds a certificate to an ARAP key but does not make RSA-SHA1 an ARAP content-signature algorithm.
 
 ### M0b: Golden vectors and conformance
 
