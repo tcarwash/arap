@@ -27,8 +27,11 @@ create an ARAP account or provide an authentication server.
   send the request file to the responder through your chosen transport, and
   have the responder produce a response with its key. Verify and consume that
   response once. Keep the verifier's challenge database durable; replay must
-  fail. Mutual authentication requires both inverse requests to be bound to
-  the same application session.
+  fail. For mutual authentication, use the **Mutual authentication** section
+  in the same tab to create both inverse requests with a shared session
+  binding. Send each request to its named peer, sign each using the responder
+  controls, then verify both responses together against the same replay
+  database and session binding.
 - **Use TQSL enrollment:** native enrollment bundles target Linux amd64/arm64,
   macOS amd64/arm64 and Windows amd64; check release validation for the
   hosted native results.

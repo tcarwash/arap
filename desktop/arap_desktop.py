@@ -537,6 +537,27 @@ class ARAPDesktop:
         self._entry(body, 20, "LoTW enrollment database (optional)", "challenge_enrollment", browse="save")
         self._entry(body, 21, "Requester callsign", "challenge_expected_requester")
         self._action(body, 22, "Verify once and consume challenge", self.verify_challenge)
+        ttk.Separator(body).grid(row=23, column=0, columnspan=3, sticky="ew", pady=14)
+        ttk.Label(body, text="Mutual authentication — coordinated request pair", font=("TkDefaultFont", 11, "bold")).grid(row=24, column=0, sticky="w", pady=(2, 2))
+        ttk.Label(body, text="This creates inverse challenges in the same replay database. Send each request to its named peer, have each peer sign with the responder workflow above, then verify both responses together.", style="Sub.TLabel", wraplength=720, justify="left").grid(row=25, column=0, columnspan=3, sticky="w", pady=(0, 8))
+        self._entry(body, 26, "Party A callsign", "mutual_party_a")
+        self._entry(body, 27, "Party B callsign", "mutual_party_b")
+        self._entry(body, 28, "Shared session binding (hex)", "mutual_session_hex")
+        self._entry(body, 29, "Request from A output", "mutual_out_from_a", browse="save")
+        self._entry(body, 30, "Request from B output", "mutual_out_from_b", browse="save")
+        self._action(body, 31, "Create and record mutual requests", self.issue_mutual_challenges)
+        ttk.Label(body, text="Verify both responses", font=("TkDefaultFont", 11, "bold")).grid(row=32, column=0, sticky="w", pady=(10, 2))
+        self._entry(body, 33, "Request issued by A", "mutual_request_from_a", browse="open")
+        self._entry(body, 34, "Response signed by B", "mutual_response_from_b", browse="open")
+        self._entry(body, 35, "Request issued by B", "mutual_request_from_b", browse="open")
+        self._entry(body, 36, "Response signed by A", "mutual_response_from_a", browse="open")
+        self._entry(body, 37, "Party A public key", "mutual_public_a", browse="open")
+        self._entry(body, 38, "Party B public key", "mutual_public_b", browse="open")
+        self._entry(body, 39, "Party A trust store", "mutual_trust_a", browse="open")
+        self._entry(body, 40, "Party B trust store", "mutual_trust_b", browse="open")
+        self._entry(body, 41, "Party A enrollment DB (optional)", "mutual_enrollment_a", browse="open")
+        self._entry(body, 42, "Party B enrollment DB (optional)", "mutual_enrollment_b", browse="open")
+        self._action(body, 43, "Verify and consume mutual pair", self.verify_mutual_challenges)
 
     def pick_cli(self) -> None:
         path = filedialog.askopenfilename(title="Select the arap executable")
@@ -1056,6 +1077,55 @@ class ARAPDesktop:
             if enrollment: args.extend(["--enrollment-store", enrollment])
             _, result = self.run_cli(args, (0, 1))
             self._report("Challenge verification", result)
+        except Exception as exc: self._error(exc)
+
+    def issue_mutual_challenges(self) -> None:
+        try:
+            party_a = self.mutual_party_a.get().strip()
+            party_b = self.mutual_party_b.get().strip()
+            session = self.mutual_session_hex.get().strip()
+            store = self.challenge_store.get().strip()
+            request_a = self.mutual_out_from_a.get().strip()
+            request_b = self.mutual_out_from_b.get().strip()
+            if not all((party_a, party_b, session, store, request_a, request_b)):
+                raise ValueError("Complete both callsigns, session binding, replay database and both request output paths.")
+            _, result = self.run_cli([
+                "challenge", "mutual-issue", "--party-a", party_a, "--party-b", party_b,
+                "--session-binding-hex", session, "--store", store,
+                "--out-from-a", request_a, "--out-from-b", request_b,
+            ])
+            self._report("Mutual challenge pair issued", result)
+        except Exception as exc: self._error(exc)
+
+    def verify_mutual_challenges(self) -> None:
+        try:
+            request_a = self.mutual_request_from_a.get().strip()
+            response_b = self.mutual_response_from_b.get().strip()
+            request_b = self.mutual_request_from_b.get().strip()
+            response_a = self.mutual_response_from_a.get().strip()
+            party_a, party_b = self.mutual_party_a.get().strip(), self.mutual_party_b.get().strip()
+            public_a, public_b = self.mutual_public_a.get().strip(), self.mutual_public_b.get().strip()
+            trust_a, trust_b = self.mutual_trust_a.get().strip(), self.mutual_trust_b.get().strip()
+            session, store = self.mutual_session_hex.get().strip(), self.challenge_store.get().strip()
+            enrollment_a = self.mutual_enrollment_a.get().strip()
+            enrollment_b = self.mutual_enrollment_b.get().strip()
+            if not all((request_a, response_b, request_b, response_a, party_a, party_b,
+                        public_a, public_b, session, store)):
+                raise ValueError("Complete both request/response pairs, callsigns, public keys, session binding and replay database.")
+            if not (trust_a or enrollment_a) or not (trust_b or enrollment_b):
+                raise ValueError("Choose a local trust store or accepted enrollment database for each party.")
+            args = [
+                "challenge", "mutual-verify", "--request-from-a", request_a,
+                "--response-from-b", response_b, "--request-from-b", request_b,
+                "--response-from-a", response_a, "--party-a", party_a, "--party-b", party_b,
+                "--party-a-public-key", public_a, "--party-b-public-key", public_b,
+                "--party-a-trust-store", trust_a, "--party-b-trust-store", trust_b,
+                "--session-binding-hex", session, "--store", store,
+            ]
+            if enrollment_a: args.extend(("--party-a-enrollment-store", enrollment_a))
+            if enrollment_b: args.extend(("--party-b-enrollment-store", enrollment_b))
+            _, result = self.run_cli(args, (0, 1))
+            self._report("Mutual challenge verification", result)
         except Exception as exc: self._error(exc)
 
 

@@ -140,3 +140,10 @@ pair only for the exact expected session binding and consumes both requests
 atomically. A failed attempt leaves both pending until expiry; a consumed pair
 cannot be reused. The challenge SQLite database must remain at the verifier
 that issued the pair.
+
+The desktop Challenge tab exposes the same coordinated workflow under
+“Mutual authentication”. Create both requests using one verifier-owned replay
+database, send each request to its named peer, and use the responder section to
+sign each incoming request. Enter both request/response pairs, both public
+keys, each party's trust source, the original session binding, and that same
+replay database to verify and consume the pair atomically.
