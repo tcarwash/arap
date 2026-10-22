@@ -1,7 +1,8 @@
 # Amateur Radio Authentication Profile (ARAP)
 
 **Status:** Draft v0.1 — design proposal, not an adopted standard  
-**Date:** 2026-10-20  
+**Date:** 2026-10-22
+
 **Intended audience:** amateur-radio application developers, station operators, implementers of independent transports  
 **License of this specification:** CC0-1.0 (proposed; see project README)
 
@@ -150,18 +151,19 @@ Clients MUST NOT interpret a self-issued endorsement as independent callsign ide
 The initial Go implementation and payload schema are in `endorsement/` and
 `ARAP-key-endorsement-v1.cddl`. Endorsement proofs use the generic Ed25519
 COSE envelope, an application-supplied root, strict purpose attenuation and a
-bounded delegation depth. This profile remains experimental until independent
-vectors, CLI integration, broader negative cases, and external review are done.
+bounded delegation depth. Go, CLI and Python interfaces support issuance,
+chain assembly and explicit-root verification. The profile remains
+experimental pending broader independent review.
 
 ## 7. Identity and trust
 
-Support two independent key providers:
+The prototype has two separate callsign-key establishment paths:
 
-**Software-key identity.** Ed25519 using the fully specified COSE algorithm `Ed25519` (`-19`, RFC 9864), with key fingerprints and a configurable local trust store. An unknown key can produce a mathematically valid signature but is not automatically a callsign-verified identity. Verification requires the actual public key, not just its fingerprint. Local callsign/key/purpose authorization is implemented; LoTW-backed identity binding is not.
+**Software-key identity.** Ed25519 using the fully specified COSE algorithm `Ed25519` (`-19`, RFC 9864), with key fingerprints and a configurable local trust store. An unknown key can produce a mathematically valid signature but is not automatically a callsign-verified identity. Verification requires the actual public key, not just its fingerprint. Local callsign/key/purpose authorization is implemented.
 
-**TQSL identity research.** TQSL's current `tqsl_signDataBlock` implementation hardcodes RSA-SHA1, corresponding to deprecated COSE RS1; ARAP MUST NOT use it to sign proofs. TQSL may be considered as a separate certificate identity-evidence source only after permitted use, certificate Key Usage/EKU, callsign extraction, trust anchors and revocation/status policy are established. Do not imply that TQSL authenticated an ARAP-native key unless a separate, valid binding mechanism is specified and verified.
+**TQSL Callsign Certificate evidence.** The experimental enrollment protocol uses a fresh audience-bound challenge and binds its Callsign Certificate to an ARAP Ed25519 key. Version 1 authorizes `challenge-response` only; version 2 carries verifier-selected purposes and requires each verifier to apply its own explicit purpose policy. TQSL's `tqsl_signDataBlock` API uses RSA/SHA-1, corresponding to deprecated COSE RS1; ARAP accepts that signature only for the short-lived enrollment assertion. ARAP content and challenge-response signatures remain Ed25519. The verifier builds trust from roots in the configured TQSL data directory, the platform TQSL default, or an explicit root override, then checks timestamped serial-status evidence from the LoTW endpoint used by TQSL. It fails closed for unknown, revoked, stale, or unavailable status. Live validation against a real station certificate and status response remains outstanding.
 
-TQSL-specific trust is **provisional** until algorithm and policy research is completed. The project MUST NOT claim that ARRL endorses this use or that LoTW provides a public certificate lookup/revocation service without verification. The documented arbitrary-data-block API is not by itself evidence of permission for this use or standard COSE compatibility.
+This enrollment result is authentication evidence under ARAP policy. It MUST NOT be represented as an ARRL-approved login, endorsement, or LoTW transaction. TQSL support for RSA/SHA-1 is the reason it is accepted in this narrow enrollment assertion; it does not make RSA/SHA-1 acceptable for ARAP content or challenge signatures.
 
 A verifier MUST surface separate results for `cryptographic_signature`, `content_integrity`, `callsign_identity`, `challenge_freshness` (if applicable), and `overall_policy`.
 
@@ -223,9 +225,10 @@ A content proof is durable and can be replayed with the *same unchanged content*
 
 ## 10. Verification algorithm
 
-The following is conceptual. Detailed COSE processing follows RFC 9052:
-
-The `key-endorsement` branch describes a possible future profile only. Current v1 implementations support content signatures and the separate challenge-response schema; they reject endorsements.
+The following is conceptual. Detailed COSE processing follows RFC 9052 and
+the purpose-specific schemas. Content, challenge-response, and experimental
+key-endorsement implementations exist; enrollment uses separate versioned
+challenge and response schemas.
 
 ```text
 verify(proof_bytes, optional_content_bytes, optional_outstanding_challenge, trust_policy):
@@ -277,10 +280,10 @@ Changes to signed byte representations, hash reference format, or security polic
 ## 13. Open questions before standardization
 
 1. Independent review and broader conformance vectors for the implemented COSE/CBOR profiles.
-2. TQSL certificate subject/callsign binding, certificate policies, trust anchors, status/revocation evidence, and permitted ARAP use.
+2. Live validation of the TQSL certificate chain and current status evidence using a real station certificate; keep this separate from the ARAP authentication-evidence semantics, which do not imply ARRL approval.
 3. Whether an optional transcription checksum is useful and, if so, its versioned format.
 4. Resolver discovery and federation conventions without centralizing authorization.
-5. Whether endorsements are needed and, if so, their delegation limits and separate profile.
+5. Independent review of the experimental endorsement profile and its delegation limits.
 6. Mapping to OPV's concrete messages once those are stabilized and tested.
 
 ## 14. References
