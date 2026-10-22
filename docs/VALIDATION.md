@@ -444,7 +444,7 @@ directory, `TQSLDIR`, and platform default are considered in order. Python
 certificate-list integration and the Tk status refresh smoke confirm the
 selected directory reaches their respective helper and CLI operations.
 `make test`, `make vet`, `make race`, `make vectors`,
-`make cddl`, all 11 Python client tests, and the source Tk/Xvfb smoke passed.
+`make cddl`, all 12 Python client tests, and the source Tk/Xvfb smoke passed.
 CGO-free `go build ./...` passed for Linux amd64/arm64, macOS amd64/arm64 and
 Windows amd64. These compile checks do not validate native TQSL helper behavior
 or desktop startup on macOS/Windows; those hosted native jobs and real
@@ -455,6 +455,9 @@ pinned TrustedQSL source. The native helper listed and signed with a generated
 certificate in an isolated TQSL data directory; the verifier accepted only
 synthetic demo status, authorized an Ed25519 content proof and challenge, and
 rejected the documented negative cases including replay and disablement. The
+Python wrapper argument tests confirm the selected TQSL data directory reaches
+certificate listing, response verification, and status refresh; verify/refresh
+were checked through a mocked CLI call and made no network request. The
 installed-wheel Python consumer passed from outside the checkout across
 content, PixelQSO, challenge, endorsement and keyserver workflows, and
 `scripts/check-machine-interface.py` validated machine error envelopes against

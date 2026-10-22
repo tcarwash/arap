@@ -331,6 +331,26 @@ class ClientIntegrationTest(unittest.TestCase):
         self.assertEqual(listed["result"]["certificates"],
                          [{"callsign": "K7ABC", "serial": "12345"}])
 
+    def test_lotw_verify_and_refresh_forward_custom_tqsl_directory(self) -> None:
+        calls: list[list[str]] = []
+        original_call = self.client._call
+        self.client._call = lambda args, **kwargs: (calls.append(list(args)) or {"ok": True})
+        try:
+            self.client.verify_enrollment(
+                b"response", audience="python-verifier", store="enrollment.sqlite",
+                tqsl_directory="custom-tqsl-data",
+            )
+            self.client.refresh_enrollment(
+                b"response", callsign="K7ABC", key_id="a" * 64,
+                store="enrollment.sqlite", tqsl_directory="custom-tqsl-data",
+            )
+        finally:
+            self.client._call = original_call
+        self.assertEqual(len(calls), 2)
+        for args in calls:
+            self.assertIn("--tqsl-directory", args)
+            self.assertEqual(args[args.index("--tqsl-directory") + 1], "custom-tqsl-data")
+
 
 if __name__ == "__main__":
     unittest.main()
