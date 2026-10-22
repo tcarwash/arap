@@ -338,11 +338,13 @@ use the QSO date-range/log-signing workflow to create an enrollment assertion.
 Responding signs only the challenge bytes and does not submit a QSO.
 
 This remains an experimental enrollment path, not a production or ARRL-approved
-workflow. The optional client adapter is built against TrustedQSL source and
-does not ship inside the app bundles. The project does not ship approved ARRL
-trust anchors or the complete certificate policy, and the status client still
-needs integration validation. Callsigns are read only from the TQSL-specific
-subject attribute; they are not guessed from a generic X.509 subject. The
+workflow. Native platform bundles build and include the optional client helper
+against the pinned TrustedQSL source. ARAP loads roots from the user's
+configured TQSL data directory, the platform TQSL default, or an explicit PEM
+override; it follows TQSL/ARRL's accepted certificate roots and serial-status
+evidence. Real-certificate and live status validation remain pending. Callsigns
+are read only from the TQSL-specific subject attribute; they are not guessed
+from a generic X.509 subject. The
 challenge wire formats are defined by
 [`ARAP-lotw-enrollment-v1.cddl`](../spec/ARAP-lotw-enrollment-v1.cddl) and
 [`ARAP-lotw-enrollment-v2.cddl`](../spec/ARAP-lotw-enrollment-v2.cddl).

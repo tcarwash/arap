@@ -296,8 +296,9 @@ status as synthetic-only. `go test ./...`, all 11 Python consumer tests, the
 installed-wheel consumer check, and the Tk desktop workflow smoke passed. The
 Tk smoke also exposed and fixed unsupported `wraplength` options on two
 `ttk.Checkbutton` widgets. No live LoTW status query or real certificate was
-used; certificate policy, permitted use, independent application review, and
-hosted CI remain release gates.
+used; real-certificate/live-status validation, independent application review,
+and hosted CI remain release gates. The root and status evidence policy follows
+the configured sources accepted by TQSL/ARRL.
 
 ## Linux amd64 enrollment bundle (2026-10-20)
 

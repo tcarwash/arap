@@ -59,7 +59,8 @@ completeness.
   Never silently widen existing challenge-only records or infer historical
   certificate validity from a content proof's asserted signing time. Version 1
   remains challenge-response-only; version 2 binds selected purposes and requires
-  explicit verification policy. Live certificate policy review remains a gate.
+  explicit verification policy. Real-certificate and live status validation
+  remain final gates under the selected TQSL/ARRL root and evidence policy.
 - [x] Implement an initial key-endorsement purpose: Go issuance, verification,
   canonical schema and proof-byte import/export with explicit issuer trust. Enforce expiry,
   allowed purposes, delegation depth, cycle rejection and disablement. Endorsement
