@@ -437,11 +437,12 @@ client suite passed all 11 tests, and the synthetic release-inventory test
 validated all five target sets plus project and native/Go dependency notices.
 
 On 2026-10-22, the custom TQSL data-directory path was rechecked after its CLI,
-desktop and Python wrapper integration. Root-path precedence tests confirm an
-explicit PEM override, selected TQSL directory, `TQSLDIR`, and platform default
-are considered in order. Python certificate-list integration and the Tk status
-refresh smoke confirm the selected directory reaches their respective helper
-and CLI operations. `make test`, `make vet`, `make race`, `make vectors`,
+desktop and Python wrapper integration. Root tests load a generated self-signed
+CA from `DIR/certs/root` and confirm an explicit PEM override, selected TQSL
+directory, `TQSLDIR`, and platform default are considered in order. Python
+certificate-list integration and the Tk status refresh smoke confirm the
+selected directory reaches their respective helper and CLI operations.
+`make test`, `make vet`, `make race`, `make vectors`,
 `make cddl`, all 11 Python client tests, and the source Tk/Xvfb smoke passed.
 CGO-free `go build ./...` passed for Linux amd64/arm64, macOS amd64/arm64 and
 Windows amd64. These compile checks do not validate native TQSL helper behavior
