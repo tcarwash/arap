@@ -91,10 +91,11 @@ LoTW/TQSL enrollment remains experimental. It uses the RSA-SHA1 signature
 supported by the TQSL Callsign Certificate API only for the short-lived,
 audience-bound enrollment assertion; ARAP content and challenge signatures use
 Ed25519. The legacy `allow_legacy_rsa_sha1` argument remains accepted for
-source compatibility but is no longer required. Verification requires the
-TQSL helper, configured TQSL/ARRL roots, and an available certificate status
-service. Enrollment is ARAP authentication evidence, not an ARRL-approved
-login or endorsement.
+source compatibility but is no longer required. Response signing and
+certificate listing require the TQSL helper. Verification and status refresh
+use configured TQSL/ARRL roots (or an explicit PEM override) and the live
+certificate-status service; they do not invoke the signing helper. Enrollment
+is ARAP authentication evidence, not an ARRL-approved login or endorsement.
 
 The CLI equivalent of `list_enrollment_certificates` is
 `arap enrollment certificates --request FILE [--tqsl-helper FILE] [--tqsl-directory DIR]`.
