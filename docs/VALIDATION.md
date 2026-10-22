@@ -376,3 +376,26 @@ same chain and key and cannot re-enable a disabled binding. The UI smoke tests
 expiry formatting, evidence age, disablement display, and refresh argument
 routing with a stubbed CLI, without making a network request. Live refresh with
 a real certificate remains open.
+
+## Multi-platform native TQSL helper packaging (2026-10-22)
+
+The packaging path now accepts a helper built on the target OS, bundles
+TQSLLIB's configuration and redistribution notice, and includes native runtime
+libraries. The macOS path copies non-system dylibs and rewrites their load paths
+to use the extracted bundle directory. Windows and macOS CI use static TQSLLIB;
+Windows uses vcpkg static dependencies, while macOS bundles Homebrew OpenSSL
+dylibs. The native CI matrix now covers Linux amd64/arm64, macOS Intel/arm64,
+and Windows amd64. Each target archive is checked after extraction, the
+synthetic enrollment flow uses the extracted helper, and the desktop UI/CLI is
+launched on the native runner.
+
+Local evidence on Linux amd64: make test, make vectors, make cddl, make vet,
+and make enrollment-demo passed. A package assembled using the new
+external-helper path passed bundle checking, extracted-helper synthetic
+enrollment/signing/authentication, and the Xvfb desktop workflow smoke. A
+static-TQSLLIB/dynamic-OpenSSL helper also built and started successfully.
+Static OpenSSL linking on this Debian host failed because its static libcrypto
+requires libjitterentropy.a, which is not installed; the macOS job therefore
+bundles OpenSSL's dynamic libraries. Workflow YAML, Python syntax, Bash syntax,
+and git diff --check passed. Native macOS, Windows, Linux arm64 builds and
+hosted CI have not run yet.

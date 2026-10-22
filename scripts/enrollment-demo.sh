@@ -37,17 +37,19 @@ responder_dir="$tmp_dir/responder"
 verifier_dir="$tmp_dir/verifier"
 fixture_dir="$tmp_dir/fixture"
 build_dir="$tmp_dir/tqsl-build"
+exe_suffix=
+if [[ "$(go env GOOS)" == windows ]]; then exe_suffix=.exe; fi
 mkdir -m 700 -p "$responder_dir" "$verifier_dir" "$fixture_dir" "$tmp_dir/tqsl-data"
 
 "$repo_dir/tqsl-helper/build.sh" "$source_dir" "$build_dir" --fixture-importer
 go build -trimpath -o "$tmp_dir/arap" "$repo_dir/cmd/arap"
 go run "$repo_dir/examples/enrollment-demo" generate --out "$fixture_dir"
-"$build_dir/arap-tqsl-fixture-import" "$tmp_dir/tqsl-data" \
+"$build_dir/arap-tqsl-fixture-import$exe_suffix" "$tmp_dir/tqsl-data" \
   "$fixture_dir/root.pem" "$fixture_dir/intermediate.pem" \
   "$fixture_dir/keybuf.b64" "$fixture_dir/leaf.pem"
-tqsl_helper=${ARAP_TQSL_HELPER:-$build_dir/arap-tqsl-sign}
+tqsl_helper=${ARAP_TQSL_HELPER:-$build_dir/arap-tqsl-sign$exe_suffix}
 
-arap="$tmp_dir/arap"
+arap="$tmp_dir/arap$exe_suffix"
 key_passphrase=synthetic-demo-only
 "$arap" keygen --private-key "$responder_dir/arap-private.pem" \
   --public-key "$responder_dir/arap-public.pem" --passphrase-stdin \

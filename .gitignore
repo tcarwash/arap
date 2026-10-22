@@ -6,3 +6,5 @@ __pycache__/
 .venv/
 interop/python/build/
 interop/python/*.egg-info/
+.build/
+.trustedqsl-source/

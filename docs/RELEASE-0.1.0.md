@@ -185,9 +185,14 @@ certificate/policy gates below.
 - Existing CI defines platform builds, native desktop jobs, protocol checks,
   vulnerability scanning, and container smoke checks. Successful hosted runs for
   the eventual release commit still need to be observed.
+- Native enrollment-bundle CI now targets Linux amd64/arm64, macOS Intel/arm64,
+  and Windows amd64. Each target builds the pinned TQSL helper natively, packages
+  its runtime dependencies, checks the extracted helper, runs the synthetic
+  enrollment flow using the extracted helper, and launches the desktop bundle.
+  Hosted results remain unobserved.
 - Desktop archives require Python/Tk. Linux amd64 now bundles the pinned native
-  TQSL helper and TQSLLIB; the other platform archives are currently preview
-  builds without LoTW enrollment. Multi-platform helper support remains beta work.
+  TQSL helper and TQSLLIB; the other cross-built archives are currently preview
+  builds without LoTW enrollment until the native jobs pass.
   Packaging still has no tag-triggered release workflow, and
   this worktree's implementation files must be reviewed and committed before a
   candidate can be built from an exact source revision.

@@ -13,10 +13,13 @@ from pathlib import Path
 
 
 def main() -> int:
-    if len(sys.argv) != 3:
-        raise SystemExit("usage: check-desktop-bundle.py ARCHIVE TARGET")
+    if len(sys.argv) not in (3, 4):
+        raise SystemExit("usage: check-desktop-bundle.py ARCHIVE TARGET [--enrollment]")
     archive = Path(sys.argv[1])
     target = sys.argv[2]
+    enrollment = len(sys.argv) == 4 and sys.argv[3] == "--enrollment"
+    if len(sys.argv) == 4 and not enrollment:
+        raise SystemExit("the only supported optional argument is --enrollment")
     executable_suffix = ".exe" if target == "windows-amd64" else ""
     launcher = "arap-desktop.bat" if target == "windows-amd64" else "arap-desktop.sh"
     required = {
@@ -49,8 +52,10 @@ def main() -> int:
         "ARAP-key-endorsement-chain-v1.cddl",
         "PixelQSO-card-v1.cddl",
     }
-    if target == "linux-amd64":
-        required |= {"arap-tqsl-sign", "libtqsllib.so", "config.xml", "TQSLLIB-LICENSE.txt"}
+    if target == "linux-amd64" or enrollment:
+        required |= {f"arap-tqsl-sign{executable_suffix}", "config.xml", "TQSLLIB-LICENSE.txt"}
+        if target.startswith("linux-"):
+            required.add("libtqsllib.so")
     with zipfile.ZipFile(archive) as bundle:
         bad_member = bundle.testzip()
         if bad_member:
@@ -93,13 +98,20 @@ def main() -> int:
                     info = json.loads(result.stdout)
                     if info.get("version") != _field(manifest, "ARAP version") or info.get("commit") != _field(manifest, "Git base commit"):
                         raise SystemExit(f"bundled {executable} version metadata does not match the manifest")
-                bundle.extract("arap-tqsl-sign", temp)
-                bundle.extract("libtqsllib.so", temp)
-                bundle.extract("config.xml", temp)
-                helper = Path(temp) / "arap-tqsl-sign"
-                helper.chmod(0o700)
+            license_text = bundle.read("TQSLLIB-LICENSE.txt").decode("utf-8")
+            if "American Radio Relay League" not in license_text or "Redistribution" not in license_text:
+                raise SystemExit("TQSLLIB redistribution notice is incomplete")
+        if enrollment:
+            with tempfile.TemporaryDirectory(prefix="arap-helper-smoke-") as temp:
+                helper_name = f"arap-tqsl-sign{executable_suffix}"
+                bundle.extract(helper_name, temp)
+                if target.startswith("linux-"):
+                    bundle.extract("libtqsllib.so", temp)
+                helper = Path(temp) / helper_name
+                if target != "windows-amd64":
+                    helper.chmod(0o700)
                 result = subprocess.run([str(helper)], capture_output=True, text=True,
-                                        check=False, timeout=10)
+                                        check=False, timeout=15)
                 if result.returncode != 2 or "valid --callsign is required" not in result.stderr:
                     raise SystemExit("bundled TQSL helper failed its extracted runtime smoke check")
             license_text = bundle.read("TQSLLIB-LICENSE.txt").decode("utf-8")

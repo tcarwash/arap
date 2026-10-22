@@ -180,7 +180,7 @@ jobs:
           TRUSTEDQSL_SOURCE_DIR: ${{ runner.temp }}/trustedqsl
       - run: python3 scripts/check-desktop-bundle.py "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip" "${{ matrix.target }}"
       - if: matrix.target == 'linux-amd64'
-        run: python3 scripts/check-packaged-tqsl-helper.py "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip"
+        run: python3 scripts/check-packaged-tqsl-helper.py "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip" "${{ matrix.target }}"
         env:
           TRUSTEDQSL_SOURCE_DIR: ${{ runner.temp }}/trustedqsl
       - if: matrix.target == 'linux-amd64'
@@ -195,34 +195,104 @@ jobs:
           retention-days: 7
 
   native-desktop-runtime:
-    name: Native desktop runtime ${{ matrix.platform }}
+    name: Native enrollment bundle ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: macos-latest
-            platform: darwin
+          - os: ubuntu-24.04
+            target: linux-amd64
+            runner-os: linux
+            python-command: /usr/bin/python3
+            tqsl-static: OFF
+            openssl-static: OFF
+          - os: ubuntu-24.04-arm
+            target: linux-arm64
+            runner-os: linux
+            python-command: /usr/bin/python3
+            tqsl-static: OFF
+            openssl-static: OFF
+          - os: macos-15-intel
+            target: darwin-amd64
+            runner-os: darwin
             python: '3.12'
             python-command: python3
+            tqsl-static: ON
+            openssl-static: OFF
+          - os: macos-15
+            target: darwin-arm64
+            runner-os: darwin
+            python: '3.12'
+            python-command: python3
+            tqsl-static: ON
+            openssl-static: OFF
           - os: windows-latest
-            platform: windows
+            target: windows-amd64
+            runner-os: windows
             python: '3.12'
             python-command: python
+            tqsl-static: ON
+            openssl-static: ON
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache-dependency-path: go.sum
-      - uses: actions/setup-python@v7
+      - if: matrix.python != ''
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
-      - name: Build native desktop bundle
+      - name: Install Linux build and desktop dependencies
+        if: matrix.runner-os == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake libssl-dev libsqlite3-dev libexpat1-dev zlib1g-dev python3-tk xvfb
+      - name: Install macOS build dependencies
+        if: matrix.runner-os == 'darwin'
+        run: brew install cmake openssl@3 expat sqlite3 zlib
+      - name: Install Windows static dependencies
+        if: matrix.runner-os == 'windows'
+        shell: powershell
+        run: vcpkg install openssl:x64-windows-static sqlite3:x64-windows-static expat:x64-windows-static zlib:x64-windows-static
+      - name: Check out pinned TrustedQSL source
         shell: bash
-        run: scripts/package-desktop.sh "${{ matrix.platform }}-$(go env GOARCH)"
-        env:
-          ARAP_VERSION: ${{ github.sha }}
+        run: |
+          git clone --filter=blob:none --no-checkout https://git.code.sf.net/p/trustedqsl/tqsl .trustedqsl-source
+          git -C .trustedqsl-source fetch --depth 1 origin 1916fc14a8cfc7f287742ae5a34aa986353d9df7
+          git -C .trustedqsl-source checkout --detach 1916fc14a8cfc7f287742ae5a34aa986353d9df7
+      - name: Build native helper and complete bundle
+        shell: bash
+        run: |
+          helper_dir="$PWD/.build/tqsl-helper"
+          mkdir -p "$helper_dir"
+          if [[ "${{ matrix.runner-os }}" == darwin ]]; then
+            export CMAKE_PREFIX_PATH="$(brew --prefix openssl@3)"
+          elif [[ "${{ matrix.runner-os }}" == windows ]]; then
+            export CMAKE_TOOLCHAIN_FILE="$(cygpath -m "$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake")"
+            export VCPKG_TARGET_TRIPLET=x64-windows-static
+          fi
+          export ARAP_TQSL_STATIC="${{ matrix.tqsl-static }}"
+          export ARAP_OPENSSL_STATIC="${{ matrix.openssl-static }}"
+          ./tqsl-helper/build.sh .trustedqsl-source "$helper_dir"
+          if [[ "${{ matrix.runner-os }}" == darwin ]]; then
+            python3 scripts/bundle-macos-dylibs.py "$helper_dir/arap-tqsl-sign"
+          fi
+          target_commit=$(git -C .trustedqsl-source rev-parse HEAD)
+          TQSL_VERSION=2.8.7 TQSL_REVISION="$target_commit" \
+            ARAP_TQSL_HELPER_DIR="$helper_dir" ARAP_VERSION="${{ github.sha }}" \
+            scripts/package-desktop.sh "${{ matrix.target }}"
+          ${{ matrix.python-command }} scripts/check-desktop-bundle.py \
+            "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip" \
+            "${{ matrix.target }}" --enrollment
+          ${{ matrix.python-command }} scripts/check-packaged-tqsl-helper.py \
+            "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip" \
+            "${{ matrix.target }}"
       - name: Launch native Tk desktop and adjacent CLI
         shell: bash
-        run: ${{ matrix.python-command }} scripts/check-desktop-ui.py --bundle "dist/arap-desktop-${{ matrix.platform }}-$(go env GOARCH)-${{ github.sha }}.zip"
+        run: ${{ matrix.python-command }} scripts/check-desktop-ui.py --bundle "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: arap-desktop-supported-${{ matrix.target }}
+          path: dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip
+          if-no-files-found: error
+          retention-days: 7

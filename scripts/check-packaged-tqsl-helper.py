@@ -11,18 +11,27 @@ from pathlib import Path
 
 
 def main() -> int:
-    if len(sys.argv) != 2:
-        raise SystemExit("usage: check-packaged-tqsl-helper.py ARCHIVE")
+    if len(sys.argv) != 3:
+        raise SystemExit("usage: check-packaged-tqsl-helper.py ARCHIVE TARGET")
     archive = Path(sys.argv[1]).resolve()
+    target = sys.argv[2]
+    suffix = ".exe" if target == "windows-amd64" else ""
     repo = Path(__file__).resolve().parents[1]
     with zipfile.ZipFile(archive) as bundle, tempfile.TemporaryDirectory(prefix="arap-packaged-helper-") as temp:
-        for name in ("arap-tqsl-sign", "libtqsllib.so", "config.xml"):
-            target = Path(temp) / name
-            target.write_bytes(bundle.read(name))
-            target.chmod(0o700 if name == "arap-tqsl-sign" else 0o600)
+        names = [f"arap-tqsl-sign{suffix}", "config.xml"]
+        if target.startswith("darwin-"):
+            names.extend(name for name in bundle.namelist() if name.endswith(".dylib"))
+        if target.startswith("linux-"):
+            names.append("libtqsllib.so")
+        for name in names:
+            extracted = Path(temp) / name
+            extracted.write_bytes(bundle.read(name))
+            if name.startswith("arap-tqsl-sign") or name.endswith((".so", ".dylib")):
+                extracted.chmod(0o700)
         env = os.environ.copy()
-        env["ARAP_TQSL_HELPER"] = str(Path(temp) / "arap-tqsl-sign")
-        result = subprocess.run(["make", "enrollment-demo"], cwd=repo, env=env,
+        env["ARAP_TQSL_HELPER"] = str(Path(temp) / f"arap-tqsl-sign{suffix}")
+        env.setdefault("TRUSTEDQSL_SOURCE_DIR", ".trustedqsl-source")
+        result = subprocess.run(["bash", "scripts/enrollment-demo.sh"], cwd=repo, env=env,
                                 capture_output=True, text=True, check=False, timeout=300)
         output = result.stdout + result.stderr
         if result.returncode:

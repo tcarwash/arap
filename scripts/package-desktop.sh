@@ -80,7 +80,32 @@ cp \
   "$stage/"
 cp "$repo_root/spec/"*.cddl "$repo_root/spec/ARAP-machine-error-v1.schema.json" "$stage/spec/"
 
-if [[ "$target" == linux-amd64 ]]; then
+if [[ -n "${ARAP_TQSL_HELPER_DIR:-}" ]]; then
+  helper_dir="$ARAP_TQSL_HELPER_DIR"
+  helper_name="arap-tqsl-sign$suffix"
+  if [[ ! -f "$helper_dir/$helper_name" ]]; then
+    printf 'Native TQSL helper is missing: %s\n' "$helper_dir/$helper_name" >&2
+    exit 2
+  fi
+  if [[ "$goos" != windows && ! -x "$helper_dir/$helper_name" ]]; then
+    printf 'Native TQSL helper is not executable: %s\n' "$helper_dir/$helper_name" >&2
+    exit 2
+  fi
+  [[ -f "$helper_dir/config.xml" ]] || { printf '%s\n' 'Native TQSL helper config.xml is missing.' >&2; exit 2; }
+  [[ -f "$helper_dir/TQSLLIB-LICENSE.txt" ]] || { printf '%s\n' 'Native TQSL helper license notice is missing.' >&2; exit 2; }
+  cp "$helper_dir/$helper_name" "$stage/"
+  cp "$helper_dir/config.xml" "$stage/"
+  cp "$helper_dir/TQSLLIB-LICENSE.txt" "$stage/"
+  if [[ -f "$helper_dir/libtqsllib.so" ]]; then cp "$helper_dir/libtqsllib.so" "$stage/"; fi
+  if [[ -f "$helper_dir/libtqsllib.dylib" ]]; then cp "$helper_dir/libtqsllib.dylib" "$stage/"; fi
+  if [[ "$goos" == darwin ]]; then
+    for dylib in "$helper_dir"/*.dylib; do
+      if [[ -f "$dylib" ]]; then cp "$dylib" "$stage/"; fi
+    done
+  fi
+  tqsl_version=${TQSL_VERSION:-unknown}
+  tqsl_revision=${TQSL_REVISION:-unknown}
+elif [[ "$target" == linux-amd64 ]]; then
   trustedqsl_revision=1916fc14a8cfc7f287742ae5a34aa986353d9df7
   trustedqsl_source=${TRUSTEDQSL_SOURCE_DIR:-}
   if [[ -z "$trustedqsl_source" && -f /tmp/arap-tqsl-source/src/tqsllib.h ]]; then
@@ -108,7 +133,7 @@ if [[ "$target" == linux-amd64 ]]; then
   cp "$tqsl_build/arap-tqsl-sign" "$stage/"
   cp "$tqsl_build/tqsllib/libtqsllib.so" "$stage/"
   cp "$tqsl_build/config.xml" "$stage/"
-  cp "$trustedqsl_source/src/LICENSE" "$stage/TQSLLIB-LICENSE.txt"
+  cp "$tqsl_build/TQSLLIB-LICENSE.txt" "$stage/"
   rm -rf -- "$tqsl_build" "$stage/.trustedqsl-source"
 fi
 
