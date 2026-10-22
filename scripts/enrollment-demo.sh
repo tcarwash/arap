@@ -68,7 +68,7 @@ printf '%s\n\n' "$key_passphrase" | "$arap" enrollment respond \
   --private-key "$responder_dir/arap-private.pem" \
   --tqsl-helper "$tqsl_helper" \
   --tqsl-directory "$tmp_dir/tqsl-data" --tqsl-serial 424242 \
-  --allow-legacy-rsa-sha1 --passphrase-stdin \
+  --passphrase-stdin \
   --out "$responder_dir/enrollment-response.cbor"
 go run "$repo_dir/examples/enrollment-demo" verify \
   --response "$responder_dir/enrollment-response.cbor" \

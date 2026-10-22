@@ -911,7 +911,7 @@ class ARAPDesktop:
             args = [
                 "enrollment", "respond", "--request", request,
                 "--private-key", key, "--out", output,
-                "--passphrase-stdin", "--allow-legacy-rsa-sha1",
+                "--passphrase-stdin",
             ]
             if helper:
                 args.extend(("--tqsl-helper", helper))
@@ -968,7 +968,6 @@ class ARAPDesktop:
             )
             if not confirmed:
                 return
-            args.append("--allow-legacy-rsa-sha1")
             code, output = self.run_cli(args, (0, 1))
             detail = json.dumps(json.loads(output), indent=2)
             title = "Enrollment accepted" if code == 0 else "Enrollment not accepted"

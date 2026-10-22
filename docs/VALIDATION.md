@@ -416,6 +416,13 @@ check passed. The inventory check covers project, Go-module, and native helper
 notices; no real license choice or hosted artifact was used. These are local
 Linux checks; native macOS/Windows UI and hosted CI remain unobserved.
 
+After removing deprecated RSA/SHA-1 opt-in flags from internal callers, the 11
+Python client tests, the full Tk desktop smoke, and `make enrollment-demo`
+passed. The demo built the pinned native TQSL helper, signed and verified a
+generated Callsign Certificate challenge without the flag, authorized the
+Ed25519 content proof under synthetic status evidence, and rejected replay and
+disabled-binding cases. It made no live LoTW status query.
+
 The same commit (`2b494cd`) was then packaged as a Linux amd64 desktop ZIP with
 the pinned native TQSLLIB helper and CI-style Go dependency notices. The archive
 manifest matches the commit and TQSL revision. The archive checker passed,

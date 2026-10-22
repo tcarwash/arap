@@ -414,7 +414,7 @@ class ArapClient:
             response = os.path.join(temp, "enrollment-response.cbor")
             args = ["enrollment", "respond", "--request", request_path,
                     "--private-key", private_key, "--tqsl-helper", helper,
-                    "--allow-legacy-rsa-sha1", "--out", response]
+                    "--out", response]
             if serial:
                 args += ["--tqsl-serial", serial]
             if tqsl_directory:
@@ -452,7 +452,6 @@ class ArapClient:
                     "--max-status-age", max_status_age]
             if roots:
                 args += ["--roots", roots]
-            args += ["--allow-legacy-rsa-sha1"]
             for purpose in allowed_purposes:
                 args += ["--allow-purpose", purpose]
             return self._call(args)
