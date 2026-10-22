@@ -227,11 +227,35 @@ func TestIndependentMutualChallengeVector(t *testing.T) {
 			return "untrusted"
 		}
 	}
-	result := VerifyMutualPair(requests, responses, MutualVerificationConfig{
+	config := MutualVerificationConfig{
 		VerifierA: verifierA, TrustA: trust("K7ABC"), VerifierB: verifierB,
 		TrustB: trust("AG7SU"), Store: store, Session: []byte("mutual-session-42"),
 		Now: time.Unix(1_800_000_002, 0).UTC(),
-	})
+	}
+	wrongSession := config
+	wrongSession.Session = []byte("another-session")
+	if result := VerifyMutualPair(requests, responses, wrongSession); result.Accepted || result.Reason != "mutual_purpose_or_session_mismatch" {
+		t.Fatalf("independent mutual vector accepted for wrong session: %+v", result)
+	}
+	requestB, err := DecodeRequest(requests.FromB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	requestA, err := DecodeRequest(requests.FromA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	requestB.Nonce = append([]byte(nil), requestA.Nonce...)
+	encodedB, err := EncodeRequest(requestB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sameNonce := requests
+	sameNonce.FromB = encodedB
+	if result := VerifyMutualPair(sameNonce, responses, config); result.Accepted || result.Reason != "requests_are_not_one_fresh_pair" {
+		t.Fatalf("independent mutual vector accepted reused nonce: %+v", result)
+	}
+	result := VerifyMutualPair(requests, responses, config)
 	if !result.Accepted || result.PartyA != "K7ABC" || result.PartyB != "AG7SU" {
 		t.Fatalf("independent mutual vector rejected: %+v", result)
 	}
