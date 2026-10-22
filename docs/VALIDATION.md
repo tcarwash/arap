@@ -472,3 +472,9 @@ challenge request (19,270), challenge response (20,543), public-key/certificate
 (121,290), resolver reference (38,984), resolver lookup (17,450), and PixelQSO
 card JSON (80,753). `govulncheck` found no reachable vulnerabilities; it
 reported one advisory only in a required module with no affected call path.
+
+The enrollment demo also checks that a missing helper returns a user-facing
+diagnostic and that an incorrect ARAP key password is rejected. `make
+enrollment-demo`, `make test`, `make vet`, all 12 Python client tests, the
+desktop Xvfb smoke, and `git diff --check` passed after the helper-resolution
+change.

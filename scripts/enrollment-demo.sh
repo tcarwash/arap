@@ -73,7 +73,7 @@ import os
 import sys
 from pathlib import Path
 
-from arap_interop import ArapClient
+from arap_interop import ArapClient, ArapError
 
 binary, request_path, private_key, helper, tqsl_directory, response_path = sys.argv[1:]
 request = Path(request_path).read_bytes()
@@ -85,6 +85,40 @@ certificates = listed["result"].get("certificates", [])
 serials = {item.get("serial") for item in certificates}
 if serials != {"424242", "424244"}:
     raise SystemExit(f"Python wrapper found unexpected synthetic TQSL serials: {sorted(serials)}")
+
+def expect_failure(label, fragment, operation):
+    try:
+        operation()
+    except ArapError as exc:
+        if fragment not in str(exc):
+            raise SystemExit(f"{label} returned an unexpected error: {exc}") from exc
+    else:
+        raise SystemExit(f"{label} unexpectedly succeeded")
+
+expect_failure(
+    "missing helper", "TQSL native helper not found or not executable",
+    lambda: client.respond_enrollment(
+        request, private_key=private_key,
+        helper=str(Path(helper).with_name("missing-arap-tqsl-helper")),
+        serial="424242", tqsl_directory=tqsl_directory,
+        arap_passphrase=os.environ["ARAP_DEMO_PASSPHRASE"],
+    ),
+)
+expect_failure(
+    "multiple certificates without serial", "multiple TQSL certificates match; specify --serial",
+    lambda: client.respond_enrollment(
+        request, private_key=private_key, helper=helper,
+        tqsl_directory=tqsl_directory,
+        arap_passphrase=os.environ["ARAP_DEMO_PASSPHRASE"],
+    ),
+)
+expect_failure(
+    "incorrect ARAP key password", "incorrect passphrase or damaged file",
+    lambda: client.respond_enrollment(
+        request, private_key=private_key, helper=helper, serial="424242",
+        tqsl_directory=tqsl_directory, arap_passphrase="incorrect synthetic password",
+    ),
+)
 try:
     client.respond_enrollment(
         request, private_key=private_key, helper=helper,

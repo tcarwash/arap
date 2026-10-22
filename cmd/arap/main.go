@@ -265,15 +265,9 @@ func enrollmentCommand(args []string) (int, error) {
 		if err != nil || !bytes.Equal(keyID, challenge.KeyID[:]) {
 			return 2, errors.New("ARAP private key does not match the challenge")
 		}
-		program := *helperPath
-		if program == "" {
-			program = os.Getenv("ARAP_TQSL_HELPER")
-		}
-		if program == "" {
-			program, err = exec.LookPath("arap-tqsl-sign")
-		}
-		if err != nil || program == "" {
-			return 2, errors.New("TQSL native helper not found; set --tqsl-helper or ARAP_TQSL_HELPER")
+		program, err := resolveTQSLHelper(*helperPath)
+		if err != nil {
+			return 2, err
 		}
 		signer := &lotwenroll.TQSLHelperSigner{Path: program, Callsign: challenge.Callsign, Serial: *serial, Directory: *tqslDirectory, Passphrase: tqslPassword}
 		response, err := lotwenroll.Respond(request, key, signer, nil)
@@ -450,15 +444,9 @@ func listEnrollmentCertificates(args []string) (int, error) {
 	if err != nil {
 		return 2, err
 	}
-	program := *helperPath
-	if program == "" {
-		program = os.Getenv("ARAP_TQSL_HELPER")
-	}
-	if program == "" {
-		program, err = exec.LookPath("arap-tqsl-sign")
-	}
-	if err != nil || program == "" {
-		return 2, errors.New("TQSL native helper not found; set --tqsl-helper or ARAP_TQSL_HELPER")
+	program, err := resolveTQSLHelper(*helperPath)
+	if err != nil {
+		return 2, err
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -499,6 +487,21 @@ func listEnrollmentCertificates(args []string) (int, error) {
 		}
 	}
 	return 0, json.NewEncoder(os.Stdout).Encode(map[string]any{"callsign": challenge.Callsign, "certificates": result.Certificates})
+}
+
+func resolveTQSLHelper(explicit string) (string, error) {
+	program := explicit
+	if program == "" {
+		program = os.Getenv("ARAP_TQSL_HELPER")
+	}
+	if program == "" {
+		program = "arap-tqsl-sign"
+	}
+	resolved, err := exec.LookPath(program)
+	if err != nil {
+		return "", fmt.Errorf("TQSL native helper not found or not executable at %q; set --tqsl-helper or ARAP_TQSL_HELPER: %w", program, err)
+	}
+	return resolved, nil
 }
 
 func readPassphraseLines(count int) ([][]byte, error) {

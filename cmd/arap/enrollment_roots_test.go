@@ -9,6 +9,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -31,6 +32,15 @@ func TestEnrollmentRootPathPriority(t *testing.T) {
 	want = filepath.Join("env", "tqsl", "certs", "root")
 	if err != nil || got != want {
 		t.Fatalf("TQSLDIR root path = %q, want %q (err=%v)", got, want, err)
+	}
+}
+
+func TestResolveTQSLHelperReportsMissingExplicitPath(t *testing.T) {
+	t.Setenv("ARAP_TQSL_HELPER", "")
+	missing := filepath.Join(t.TempDir(), "missing-tqsl-helper")
+	_, err := resolveTQSLHelper(missing)
+	if err == nil || !strings.Contains(err.Error(), "TQSL native helper not found or not executable") {
+		t.Fatalf("missing helper error = %v", err)
 	}
 }
 
