@@ -5,8 +5,8 @@ challenge, response, verifier and status client. `arap enrollment respond`
 uses the optional native helper in `tqsl-helper/` to sign through TQSLLIB
 without exporting the station private key. The project accepts TQSL's
 RSA/SHA-1 data-block signature for this narrowly scoped, short-lived enrollment
-assertion because that is the signing operation TQSL provides. The CLI and
-desktop still require an explicit per-operation acknowledgement. This decision
+assertion because that is the signing operation TQSL provides. The UI explains
+the signature and requests confirmation before it signs or queries status. This
 does not permit RSA/SHA-1 for ARAP content or challenge signatures: those remain
 Ed25519. The project treats successful enrollment as authentication evidence
 under ARAP policy, not as an ARRL-approved login or endorsement. Live
@@ -61,8 +61,8 @@ this legacy operation only for the fresh, audience-bound, single-use enrollment
 challenge. The nonce and audience binding limit replay and cross-protocol use;
 they do not strengthen RSA-1024/SHA-1. The operation must never be used for
 ARAP content or challenge-response signatures, which stay on Ed25519. The
-per-operation acknowledgement remains so users understand which mechanism
-their station certificate applies to.
+the UI explains which mechanism the station certificate applies to before an
+enrollment action.
 
 The API lifecycle must also be reviewed for key handling. `tqsl_beginSigning`
 loads an unencrypted in-memory copy of the private key, and
@@ -145,8 +145,8 @@ ARAP makes its separate use explicit.
 ## Required gates before implementation is trusted
 
 - [x] Accept the legacy RSA-1024/SHA-1 signature for the narrowly scoped
-  enrollment assertion, with per-operation acknowledgement. Keep it separate
-  from Ed25519 proof and challenge signing.
+  enrollment assertion. Keep it separate from Ed25519 proof and challenge
+  signing; the UI explains the algorithm before the user confirms an action.
 - [x] Establish ARRL root, intermediate, key-usage, callsign extraction,
   exact-match, expiry, and status/revocation rules from TQSL's configured root
   bundle and the LoTW certificate-status source. Portable calls require their

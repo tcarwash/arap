@@ -35,7 +35,7 @@ create an ARAP account or provide an authentication server.
   Import and verify a current Callsign Certificate in TQSL first. Issue
   a fresh enrollment challenge for the intended audience and ARAP key. On the
   responder, list matching certificate serials, choose the intended serial, and
-  explicitly acknowledge TQSL's supported RSA-SHA1 signature for this
+  review the signature notice and confirm before signing this
   enrollment assertion. ARAP's content and challenge signatures remain Ed25519. The
   verifier separately checks its certificate roots and current status service. This is experimental
   authentication evidence for ARAP; it is not an ARRL-approved login, QSO

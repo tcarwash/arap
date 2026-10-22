@@ -245,7 +245,8 @@ the authentication demo prints the accepted callsign and later replay rejection.
   certificate-status source. See [the enrollment policy](LOTW-BINDING-DESIGN.md#certificate-acceptance-policy).
 - [x] Review the legacy RSA/SHA-1 enrollment threat model and document the beta
   decision. The project accepts TQSL's supported signature only for the
-  fresh-challenge enrollment assertion, with per-operation acknowledgement;
+  fresh-challenge enrollment assertion; the interface explains its use before
+  signing;
   ARAP content and challenge signatures remain Ed25519. Enrollment is ARAP
   authentication evidence and is not represented as an ARRL login or endorsement.
 - [x] Define status freshness and outage policy using the TQSL-compatible LoTW
