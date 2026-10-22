@@ -34,7 +34,9 @@ status URL used by TQSL with cache-revalidation headers and response-age
 accounting. The CLI can load self-signed roots from TQSL's local `certs/root`
 bundle by default, keeping intermediates separate from trust anchors. The
 adapter and status client have not yet been validated against a real
-ARRL-issued certificate. A complete ARRL certificate policy is still missing.
+ARRL-issued certificate. ARAP follows the certificate roots and status evidence
+accepted by TQSL/ARRL; validation against a real station certificate and live
+status service remains pending.
 TQSL's local cached status API still cannot provide its own freshness
 timestamp. The profile is therefore not ready for production enrollment.
 

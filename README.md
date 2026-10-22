@@ -21,7 +21,7 @@ Building from source requires Go 1.26.10 or later. This minimum keeps the Go sta
 
 The current executable uses independent Ed25519 (`-19`) keys and a pure-Go SQLite driver for durable challenge replay protection; enrollment has not been validated against a live LoTW certificate. The enrollment flow includes a fresh challenge, dual signatures, certificate/status checks, atomic binding storage, and an optional native TQSL helper. TQSL's supported RSA-SHA1 data-block API is accepted only for the enrollment assertion; ARAP content and challenge signatures remain Ed25519. The resulting call-sign authentication evidence is for ARAP and does not imply an ARRL-approved login or endorsement. See the [LoTW binding design](docs/LOTW-BINDING-DESIGN.md) and [TQSL research](docs/TQSL-RESEARCH.md).
 
-The verifier can issue and persist a bounded enrollment challenge with `arap enrollment issue`, while the client can sign it with `arap enrollment respond` using the optional helper built against TrustedQSL source. Verification uses TQSL's local ARRL root bundle by default and queries the LoTW certificate-status endpoint. TQSL's supported RSA/SHA-1 signature is accepted only for this enrollment assertion; ARAP content and challenge signatures use Ed25519. This flow does not create or submit a QSO and is not an ARRL-approved login. See the [enrollment design](docs/LOTW-BINDING-DESIGN.md) for helper build and use instructions.
+The verifier can issue and persist a bounded enrollment challenge with `arap enrollment issue`, while the client can sign it with `arap enrollment respond` using the optional helper built against TrustedQSL source. Verification uses the configured TQSL/ARRL root bundle by default and queries the LoTW certificate-status endpoint. Pass `--tqsl-directory DIR` to use a custom TQSL data directory for helper access and root discovery, or `--roots PEM` to select an explicit root bundle. TQSL's supported RSA/SHA-1 signature is accepted only for this enrollment assertion; ARAP content and challenge signatures use Ed25519. This flow does not create or submit a QSO and is not an ARRL-approved login. See the [enrollment design](docs/LOTW-BINDING-DESIGN.md) for helper build and use instructions.
 
 `make enrollment-demo` exercises native signing with generated certificates in an isolated TQSL directory and a demo-only synthetic status provider. It does not use station credentials or query LoTW. `make signing-demo` demonstrates offline content and PixelQSO proof flows. See the [release plan](docs/RELEASE-0.1.0.md) for validation status and beta limitations.
 
@@ -36,7 +36,7 @@ The Tk desktop client needs Python 3 with Tk 8.6 and a built CLI; run `make desk
 - COSE_Sign1 / CBOR, not homemade signature primitives
 - Signing arbitrary content as a core operation
 - Challenge-response as a separate purpose with single-use verifier nonces
-- LoTW callsign authentication as a core target; experimental enrollment responder and verifier exist, while ARRL policy and real-certificate validation remain incomplete; Ed25519 signs ARAP content
+- LoTW callsign authentication as a core target; enrollment uses TQSL/ARRL accepted roots and status evidence, with real-certificate validation pending; Ed25519 signs ARAP content and challenge responses
 - Short on-air artifacts locate complete proofs and never replace cryptographic verification
 - HTTPS proof hosting is optional; direct offline verification must work
 - Opulent Voice is an optional adapter, not a required transport

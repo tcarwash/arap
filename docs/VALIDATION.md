@@ -206,12 +206,12 @@ and ARRL accept; real certificate-chain/status validation remains a final live
 test. The TQSL RSA/SHA-1 signature is accepted only for fresh enrollment
 authentication evidence, never for ARAP content or challenge signatures.
 
-The Keys & Trust tab now exposes enrollment challenge issue and response
-verification, including a default-off legacy-signature checkbox and a second
-confirmation before verification. The updated Go packages compile with
-`go build ./...`, and the desktop script passes Python bytecode compilation;
-the updated controls and TQSL-root discovery have not yet been exercised in Tk
-or through a response flow.
+Earlier enrollment UI snapshot (superseded): the Keys & Trust tab at that point
+had a default-off legacy-signature checkbox. The current interface no longer
+requires that opt-in; the RSA/SHA-1 algorithm is limited to TQSL enrollment
+assertions and is described before signing. The desktop also accepts a custom
+TQSL data directory for certificate listing, signing, root discovery and
+status refresh.
 
 Follow-up verification passed `go test ./...`, `go test -race ./lotwenroll`, `go vet ./...`, Python/shell syntax checks, the full Tk/Xvfb workflow smoke, `make cddl`, and the Linux amd64 package content check. The package contains the enrollment schemas; the CLI can list and disable enrollment bindings, and challenge verification can use the enrollment database subject to the 24-hour default status-evidence age. No real LoTW credentials or station-certificate signatures were used.
 

@@ -313,16 +313,20 @@ class ClientIntegrationTest(unittest.TestCase):
             public_key=str(self.public), store=str(self.work / "certificate-list.sqlite"),
         )
         helper = self.work / "fake-tqsl-helper"
+        tqsl_directory = self.work / "custom-tqsl-data"
         helper.write_text(
             "#!/usr/bin/env python3\n"
             "import json, sys\n"
             "assert '--list-certificates' in sys.argv\n"
             "assert '--callsign' in sys.argv and sys.argv[sys.argv.index('--callsign') + 1] == 'K7ABC'\n"
+            + f"assert '--directory' in sys.argv and sys.argv[sys.argv.index('--directory') + 1] == {str(tqsl_directory)!r}\n"
             "print(json.dumps({'certificates': [{'callsign': 'K7ABC', 'serial': '12345'}]}))\n",
             encoding="utf-8",
         )
         helper.chmod(0o700)
-        listed = self.client.list_enrollment_certificates(issued["request"], helper=str(helper))
+        listed = self.client.list_enrollment_certificates(
+            issued["request"], helper=str(helper), tqsl_directory=str(tqsl_directory),
+        )
         self.assertEqual(listed["result"]["callsign"], "K7ABC")
         self.assertEqual(listed["result"]["certificates"],
                          [{"callsign": "K7ABC", "serial": "12345"}])
