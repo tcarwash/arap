@@ -108,9 +108,9 @@ completeness.
 - [x] Expose experimental LoTW enrollment challenge/response, verification and
   local list/disable operations through the Python wrapper. Existing enrollment
   signature policy remains explicit opt-in.
-- [ ] Exercise those wrapper operations with the installed TQSL helper and a
-  live certificate-status check; verify refresh/expiry and disablement from an
-  independently maintained consumer.
+- [ ] Exercise those wrapper operations with a real station certificate and
+  live certificate-status check at the final live-validation stage; verify
+  refresh/expiry and disablement from an independently maintained consumer.
 
 Acceptance: two independent sample applications can exchange signed content,
 enroll or evaluate identity evidence, perform one-way and mutual authentication,
@@ -190,9 +190,11 @@ certificate/policy gates below.
   its runtime dependencies, checks the extracted helper, runs the synthetic
   enrollment flow using the extracted helper, and launches the desktop bundle.
   Hosted results remain unobserved.
-- Desktop archives require Python/Tk. Linux amd64 now bundles the pinned native
-  TQSL helper and TQSLLIB; the other cross-built archives are currently preview
-  builds without LoTW enrollment until the native jobs pass.
+- Desktop archives require Python/Tk. The native enrollment matrix builds the
+  pinned TQSL helper and runtime resources for Linux amd64/arm64, macOS
+  amd64/arm64 and Windows amd64. Extracted-helper synthetic enrollment and
+  native desktop checks are part of each hosted job; their results remain
+  pending until those jobs run.
   Packaging still has no tag-triggered release workflow, and
   this worktree's implementation files must be reviewed and committed before a
   candidate can be built from an exact source revision.
@@ -266,9 +268,10 @@ the promised enrollment beta rather than being silently removed from its scope.
   extraction. The packaged synthetic enrollment flow passes outside the build
   tree; standard shared Linux runtime libraries remain host prerequisites.
 - [ ] Complete the redistribution notice inventory for every bundled
-  dependency and have the project owner select the project license. The
-  TQSLLIB source license is included in the Linux amd64 archive; project
-  licensing and any additional dependency notices remain release decisions.
+  dependency and have the project owner select the project license. The native
+  packaging now includes the TQSLLIB notice and gathers OpenSSL/Expat or vcpkg
+  notices for macOS and Windows. Confirm those notice sets against the hosted
+  artifacts and finish the project license decision.
 - [x] Add version/commit reporting to both executables and the desktop About
   view. Linux amd64 archive checks compare CLI/keyserver JSON version reports
   against the build manifest; native desktop smoke repeats this on macOS and
