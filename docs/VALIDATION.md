@@ -497,6 +497,13 @@ amd64/arm64, macOS amd64/arm64, and Windows amd64. These results verify the
 source and local Linux UI only; hosted native jobs and live certificate/status
 validation remain pending.
 
+`make enrollment-demo` passed again against the pinned TrustedQSL source after
+the application changes. It rebuilt the helper, imported two generated matching
+certificates, required serial selection, completed the TQSL RSA-SHA1 enrollment
+assertion, and exercised positive and negative certificate, status, content,
+challenge, replay, and disablement cases. The status response was injected by
+the synthetic demo only; no live LoTW status was queried.
+
 The endorsement interoperability vector now includes an independent Python
 verifier. It accepts the expected chain and asserts rejection for wrong root,
 unauthorized challenge-response purpose, purpose escalation, and the wrong
