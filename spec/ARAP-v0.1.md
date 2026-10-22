@@ -146,7 +146,7 @@ Where the protocol requires mutual authentication, both sides must perform their
 
 A `key-endorsement` is a signed statement containing at least the issuer callsign/key ID, subject callsign, exact subject public-key fingerprint, issuance and expiry, and clearly restricted purpose(s) such as `content-signature` or `challenge-response`.
 
-Clients MUST NOT interpret a self-issued endorsement as independent callsign identity proof. Clients MUST limit trust delegation by explicit policy, path depth, and accepted issuers. A LoTW/TQSL credential MAY endorse an ARAP-native key only when permitted by the credential's use policy and verified under an explicitly documented trust rule.
+Clients MUST NOT interpret a self-issued endorsement as independent callsign identity proof. Clients MUST limit trust delegation by explicit policy, path depth, and accepted issuers. TQSL enrollment evidence is a separate ARAP authentication assertion and MUST NOT be treated as a key endorsement or delegation statement.
 
 The initial Go implementation and payload schema are in `endorsement/` and
 `ARAP-key-endorsement-v1.cddl`. Endorsement proofs use the generic Ed25519
