@@ -423,3 +423,8 @@ the extracted-helper synthetic enrollment demo passed, and both the installed
 Python consumer and Xvfb desktop workflow passed against the extracted ZIP.
 The local release archive reports version `dev`; this does not establish a
 hosted, tag-based prerelease build.
+
+After that packaged check, `go test ./...`, `go test -race ./...`, `go vet
+./...`, `make vectors`, and `make cddl` passed on Linux amd64. The Python
+client suite passed all 11 tests, and the synthetic release-inventory test
+validated all five target sets plus project and native/Go dependency notices.
