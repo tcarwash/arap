@@ -63,13 +63,33 @@ audience=arap-enrollment-demo-v1
 certificate_list=$("$arap" enrollment certificates --request "$verifier_dir/enrollment.cbor" \
   --tqsl-helper "$tqsl_helper" --tqsl-directory "$tmp_dir/tqsl-data")
 case "$certificate_list" in *'"serial":"424242"'*) ;; *) echo "synthetic TQSL certificate was not discoverable" >&2; exit 1 ;; esac
-printf '%s\n\n' "$key_passphrase" | "$arap" enrollment respond \
-  --request "$verifier_dir/enrollment.cbor" \
-  --private-key "$responder_dir/arap-private.pem" \
-  --tqsl-helper "$tqsl_helper" \
-  --tqsl-directory "$tmp_dir/tqsl-data" --tqsl-serial 424242 \
-  --passphrase-stdin \
-  --out "$responder_dir/enrollment-response.cbor"
+ARAP_DEMO_PASSPHRASE="$key_passphrase" PYTHONPATH="$repo_dir/interop/python" \
+  python3 - "$arap" "$verifier_dir/enrollment.cbor" \
+  "$responder_dir/arap-private.pem" "$tqsl_helper" "$tmp_dir/tqsl-data" \
+  "$responder_dir/enrollment-response.cbor" <<'PY'
+import os
+import sys
+from pathlib import Path
+
+from arap_interop import ArapClient
+
+binary, request_path, private_key, helper, tqsl_directory, response_path = sys.argv[1:]
+request = Path(request_path).read_bytes()
+client = ArapClient(binary, timeout=30)
+listed = client.list_enrollment_certificates(
+    request, helper=helper, tqsl_directory=tqsl_directory,
+)
+certificates = listed["result"].get("certificates", [])
+if not any(item.get("serial") == "424242" for item in certificates):
+    raise SystemExit("Python wrapper did not discover synthetic TQSL certificate serial 424242")
+result = client.respond_enrollment(
+    request, private_key=private_key, helper=helper, serial="424242",
+    tqsl_directory=tqsl_directory,
+    arap_passphrase=os.environ["ARAP_DEMO_PASSPHRASE"],
+)
+Path(response_path).write_bytes(result["response"])
+print("Python enrollment wrapper listed and signed with synthetic TQSL certificate 424242.")
+PY
 go run "$repo_dir/examples/enrollment-demo" verify \
   --response "$responder_dir/enrollment-response.cbor" \
   --root "$fixture_dir/root.pem" --store "$verifier_dir/enrollment.sqlite" \

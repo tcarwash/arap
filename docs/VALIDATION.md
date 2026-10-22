@@ -451,10 +451,11 @@ or desktop startup on macOS/Windows; those hosted native jobs and real
 certificate/status validation remain open.
 
 After that platform check, `make enrollment-demo` passed again against the
-pinned TrustedQSL source. The native helper listed and signed with a generated
-certificate in an isolated TQSL data directory; the verifier accepted only
-synthetic demo status, authorized an Ed25519 content proof and challenge, and
-rejected the documented negative cases including replay and disablement. The
+pinned TrustedQSL source. The native helper and Python `ArapClient` wrapper
+listed and signed with a generated certificate in an isolated TQSL data
+directory; the verifier accepted only synthetic demo status, authorized an
+Ed25519 content proof and challenge, and rejected the documented negative
+cases including replay and disablement. The
 Python wrapper argument tests confirm the selected TQSL data directory reaches
 certificate listing, response verification, and status refresh; verify/refresh
 were checked through a mocked CLI call and made no network request. The
