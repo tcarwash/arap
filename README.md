@@ -10,6 +10,11 @@ KISSChat itself remains responsible for optional asynchronous delivery and UI.
 
 Start with [the draft overview](spec/ARAP-v0.1.md). The content and challenge wire formats are described by [content CDDL](spec/ARAP-profile-v1.cddl) and [challenge CDDL](spec/ARAP-challenge-v1.cddl). The [PixelQSO card content profile](spec/PixelQSO-card-v1.cddl) and [integration guide](docs/PIXELQSO-INTEGRATION.md) describe signing saved cards. The [validation review](docs/VALIDATION.md) records remaining blockers, the [implementation plan](docs/IMPLEMENTATION-PLAN.md) tracks progress, and [keyserver operations](docs/KEYSERVER.md) documents the service.
 
+To manually sign a file, verify it under local trust, and confirm a modified
+file is rejected, follow [Prove ARAP content signing works](docs/PROOF-IT-YOURSELF.md).
+For the LoTW-backed callsign enrollment and message verification sequence, see
+the [authentication flow chart](docs/AUTH-FLOW.md).
+
 ## Build and run
 
 ```sh

@@ -52,7 +52,8 @@ func RefreshStatus(config RefreshConfig) RefreshResult {
 		return fail("certificate roots, status provider, store and maximum evidence age are required")
 	}
 	now := config.Now
-	if now.IsZero() {
+	useCurrentTime := now.IsZero()
+	if useCurrentTime {
 		now = time.Now().UTC()
 	}
 	call, err := protocol.NormalizeCallsign(config.Callsign)
@@ -126,6 +127,11 @@ func RefreshStatus(config RefreshConfig) RefreshResult {
 		return fail("certificate does not match an existing enrollment binding")
 	}
 	evidence := config.CertificateStatus(leaf)
+	// Measure freshness after the network request completes, not from the
+	// timestamp captured before it began.
+	if useCurrentTime {
+		now = time.Now().UTC()
+	}
 	result.CertificateStatus, result.StatusSource = evidence.Status, evidence.Source
 	if !evidence.ObservedAt.IsZero() {
 		result.StatusObservedAt = evidence.ObservedAt.UTC().Unix()

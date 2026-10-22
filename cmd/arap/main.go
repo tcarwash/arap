@@ -300,7 +300,7 @@ func enrollmentCommand(args []string) (int, error) {
 		statusClient := lotwenroll.ARRLCertificateStatusClient{}
 		var statusErr error
 		verification := lotwenroll.VerifyEncoded(encoded, lotwenroll.VerifyConfig{
-			Audience: *audience, Roots: roots, Now: time.Now().UTC(), Store: store,
+			Audience: *audience, Roots: roots, Store: store,
 			MaxStatusAge:    *maxStatusAge,
 			AllowedPurposes: []string(allowedEnrollmentPurposes),
 			CertificateStatus: func(cert *x509.Certificate) lotwenroll.StatusEvidence {
@@ -338,12 +338,11 @@ func enrollmentCommand(args []string) (int, error) {
 		if err != nil {
 			return 2, err
 		}
-		now := time.Now().UTC()
 		statusClient := lotwenroll.ARRLCertificateStatusClient{}
 		var statusErr error
 		result := lotwenroll.RefreshStatus(lotwenroll.RefreshConfig{
 			Callsign: *callsign, KeyID: *keyID, CertificateChain: response.Chain,
-			Roots: roots, Now: now, MaxStatusAge: *maxStatusAge, Store: store,
+			Roots: roots, MaxStatusAge: *maxStatusAge, Store: store,
 			CertificateStatus: func(cert *x509.Certificate) lotwenroll.StatusEvidence {
 				evidence, checkErr := statusClient.Check(context.Background(), cert)
 				statusErr = checkErr

@@ -8,8 +8,9 @@ truth; this map is a release checklist, not a compatibility promise yet.
 | Capability | Go package/API | CLI or schema | State for beta |
 | --- | --- | --- | --- |
 | Key generation and encrypted key files | `identity.GenerateEncryptedKeyPair`, `identity.LoadPrivateWithPassphrase`, `identity.LoadPublicKey`, `identity.WriteExclusive`; Python `generate_keypair`, `fingerprint` | `arap keygen`, `arap fingerprint --json`; age-encrypted PKCS#8 and SPKI PEM | Implemented; Python returns encrypted identity files as bytes and calculates key IDs for lifecycle operations; consuming application retains custody and handles backup/rotation |
-| Sign arbitrary content | `protocol.SignContent` with `protocol.Signer` | `arap sign`; `ARAP-profile-v1.cddl` | Implemented; Go API is available and Python wrapper is versioned; independent consumer review remains |
-| Verify content proof | `protocol.VerifyContentWithTrust`, `protocol.VerifyPayload` | `arap verify`, `arap inspect-proof` | Integrated with local purpose-scoped trust and accepted enrollment evidence; independent consumer review remains |
+| Sign arbitrary content | `protocol.SignContent` with `protocol.Signer` | `arap sign-content`; `ArapClient.sign_content`; `ARAP-profile-v1.cddl` | Implemented; Go API and versioned Python wrapper are available; independent consumer review remains |
+| Verify content proof | `protocol.VerifyContentWithTrust`, `protocol.VerifyPayload` | `arap verify-content`; `ArapClient.verify_content`; `ARAP-profile-v1.cddl` | Integrated with local purpose-scoped trust and accepted enrollment evidence; independent consumer review remains |
+| KISSChat message signing | `adapters/kisschat.Canonicalize` plus `protocol.SignContent` | KISSChat-message-v1 profile; `ArapClient.sign_content` | Implemented in KISSChat using detached ARAP content proofs; its current direct CLI invocation is an integration example, while the versioned Python wrapper is the stable cross-language API |
 | PixelQSO card signing | `adapters/pixelqso.SignJSON`, `VerifyJSON`, `CanonicalizeJSON`, animation helpers | `arap sign-pixelqso`, `arap verify-pixelqso`; `PixelQSO-card-v1.cddl` | Library-level card validation, frame linking, canonicalization, signing, verification and caller trust policy are implemented; external consumer validation remains |
 | Local callsign/key trust | `identity.LoadTrust`, `TrustStore.Add`, `TrustStore.Disable`, `TrustStore.Status`; Python `add_trust`, `list_trust`, `disable_trust` | trust CLI commands; caller-owned JSON trust file | Go callbacks and Python operations support explicit purpose-scoped add/list/disable; integration checks confirm disable and purpose-narrow reauthorization |
 | Issue a challenge | `challenge.IssueRequest`, `CancelRequest`, `NewRequest`, `EncodeRequest`, `LifecycleStore` | `arap challenge issue|cancel`; `ARAP-challenge-v1.cddl` | Implemented; persist-before-publish, cancellation, pruning and atomic consumption contract; Python exposes issue and cancel |
@@ -27,6 +28,13 @@ truth; this map is a release checklist, not a compatibility promise yet.
 - Applications pass content through `io.Reader`; ARAP hashes exact bytes. If an
   application needs canonicalization, it must name and implement that format
   before calling the signer.
+- Applications that need the KISSChat profile can use
+  `adapters/kisschat.Canonicalize` to produce its canonical bytes, then sign
+  those bytes with media type `application/vnd.kisschat.message+json` and
+  context `kisschat/message-v1`. Other languages must implement the same
+  versioned profile byte-for-byte; the ARAP signature authenticates the
+  canonical message bytes and signer key, not transport routing or live
+  station presence.
 - Applications choose the callsign/key trust decision. A valid signature proves
   possession of the signing key, while a trust callback determines authorization.
 - Challenge storage belongs behind `challenge.Store`. Applications may provide
@@ -45,6 +53,12 @@ truth; this map is a release checklist, not a compatibility promise yet.
 
 The complete two-party challenge exchange is also demonstrated in
 [`examples/mutual-auth`](../examples/mutual-auth/main.go).
+
+For Python applications, use the versioned [`ArapClient` machine interface](MACHINE-INTERFACE.md).
+Go applications can import the public packages directly. The raw CLI commands
+are useful for shell workflows and existing integrations, but their flags and
+JSON output are not the compatibility boundary for new consumers in other
+languages.
 
 Key generation, authorization, replacement enrollment, status refresh, and
 portable evidence boundaries are documented in

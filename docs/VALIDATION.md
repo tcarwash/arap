@@ -509,3 +509,23 @@ verifier. It accepts the expected chain and asserts rejection for wrong root,
 unauthorized challenge-response purpose, purpose escalation, and the wrong
 subject. `make vectors` and `go test ./endorsement` passed with the regenerated
 manifest.
+
+## Live LoTW enrollment smoke (2026-10-22)
+
+A fresh version 2 enrollment was completed with a real Callsign Certificate
+discovered in the local TQSL data directory. The native helper, built against
+the installed TrustedQSL source, signed the challenge; ARAP verified the
+certificate chain and callsign, queried the live LoTW status endpoint, accepted
+the good status evidence, and then accepted a content proof under the enrolled
+`content-signature` purpose. The temporary Ed25519 key, challenge, response,
+proof, and enrollment database were deleted after the check. No QSO was created
+or uploaded, and no TQSL private key was exported.
+
+The first live attempt exposed a clock-ordering issue: ARAP captured its
+freshness comparison time before the network status lookup, while the LoTW
+response timestamp was a few seconds ahead. Production verification and status
+refresh now measure freshness after the lookup. A small server clock lead is
+clamped to the local observation time, which ages evidence conservatively;
+larger leads remain rejected. `go test ./...` and `make enrollment-demo` passed
+after this fix. The real live smoke is a local integration check, not an
+independent protocol review or a guarantee of future LoTW endpoint availability.

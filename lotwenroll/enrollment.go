@@ -404,7 +404,8 @@ func Verify(response Response, config VerifyConfig) Verification {
 		return fail("verifier roots and enrollment store are required")
 	}
 	now := config.Now
-	if now.IsZero() {
+	useCurrentTime := now.IsZero()
+	if useCurrentTime {
 		now = time.Now()
 	}
 	c, err := Decode(response.Challenge)
@@ -479,6 +480,13 @@ func Verify(response Response, config VerifyConfig) Verification {
 	status := StatusEvidence{Status: StatusUnknown}
 	if config.CertificateStatus != nil {
 		status = config.CertificateStatus(leaf)
+	}
+	// A live status lookup can take long enough that its server timestamp is
+	// later than the time captured before the request. Use the current local
+	// time for freshness and persistence after the lookup; injected Now values
+	// remain deterministic for tests and callers.
+	if useCurrentTime {
+		now = time.Now().UTC()
 	}
 	result.CertificateStatus = status.Status
 	result.StatusSource = status.Source

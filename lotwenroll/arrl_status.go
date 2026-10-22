@@ -117,6 +117,12 @@ func (c ARRLCertificateStatusClient) Check(ctx context.Context, cert *x509.Certi
 	if observed.After(now.Add(5 * time.Minute)) {
 		return evidence, errors.New("LoTW certificate-status response is future-dated")
 	}
+	// The HTTP Date header has one-second precision, and the status host's clock
+	// may be slightly ahead. Clamping to local observation time is conservative:
+	// it can only make the evidence age sooner.
+	if observed.After(now) {
+		observed = now
+	}
 	evidence.ObservedAt = observed
 	switch strings.TrimSpace(parsed.Status[0]) {
 	case "Unrevoked":

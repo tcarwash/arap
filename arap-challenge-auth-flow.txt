@@ -1,0 +1,104 @@
+ARAP ENROLLMENT AND CHALLENGE AUTHENTICATION
+
+1. TQSL ENROLLMENT: BIND A CALLSIGN TO AN ARAP KEY
+
+VERIFIER                                      STATION
+   |                                             |
+   | Choose callsign, audience, ARAP public key, |
+   | and requested purpose                      |
+   |                                             |
+   | Create fresh, short-lived enrollment        |
+   | challenge; save it                         |
+   |---------------- challenge ---------------->|
+   |                                             |
+   |                       Check/select TQSL Callsign Certificate
+   |                       TQSL signs the challenge
+   |                       ARAP key signs the same challenge
+   |                                             |
+   |<------ certificate chain and both signatures
+   |                                             |
+   | Check challenge audience and freshness     |
+   | Validate certificate chain against trusted |
+   | TQSL/ARRL roots                             |
+   | Check certificate callsign and LoTW status |
+   | Verify TQSL signature                       |
+   | Verify ARAP signature and key fingerprint  |
+   | Check requested purpose is allowed         |
+   |                                             |
+   +-- all checks pass --> Store callsign-to-key |
+   |                       enrollment binding   |
+   +-- any check fails --> Reject enrollment    |
+
+The TQSL signature proves that the Callsign Certificate signed this fresh enrollment challenge. The ARAP signature proves that the station controls the specific ARAP key being enrolled. The verifier stores the binding only after both proofs and the certificate and status checks pass.
+
+2. ONE-WAY CHALLENGE AUTHENTICATION
+
+REQUESTER / VERIFIER                         RESPONDER
+   |                                             |
+   | Create a fresh, short-lived challenge       |
+   | and save it in the verifier's replay store |
+   |                                             |
+   |---------------- challenge ---------------->|
+   |                                             | Check callsign and expiry
+   |                                             | Sign challenge with the
+   |                                             | ARAP private key
+   |<------------ signed response --------------|
+   |                                             |
+   | Verify response signature and freshness    |
+   | Check peer's challenge-response trust      |
+   |   - local trust store, or                  |
+   |   - enrolled callsign-to-key binding       |
+   |                                             |
+   | For enrollment-based trust, check binding  |
+   | is enabled, purpose is allowed, certificate|
+   | is unexpired, and LoTW status evidence is  |
+   | still fresh                                |
+   |                                             |
+   +-- all checks pass --> Consume challenge     |
+   |                       and accept proof      |
+   +-- any check fails --> Reject                |
+   |                                             |
+   | Application decides whether to authorize   |
+   | the requested action                       |
+   +-- replay attempt --> Reject (already used) |
+
+TQSL does not sign each challenge. It signs during enrollment; subsequent challenges are signed with the enrolled ARAP key.
+
+3. MUTUAL CHALLENGE AUTHENTICATION
+
+                         VERIFIER
+                            |
+                            | Create two inverse challenges:
+                            | A -> B and B -> A
+                            | Bind both to the same purpose,
+                            | validity window, and session
+                            | Save both in the replay store
+                       _____|_____
+                      /           \
+                     v             v
+             Send A -> B         Send B -> A
+                  |                   |
+                  v                   v
+             B signs with       A signs with
+             B's ARAP key       A's ARAP key
+                  |                   |
+                  +---- responses ----+
+                            |
+                            v
+                       VERIFIER
+                            |
+                            | Check both signatures and
+                            | both peers' trust decisions
+                            | Check purpose, freshness,
+                            | and matching session binding
+                       _____|_____
+                      /           \
+                     v             v
+              Both checks pass   Any check fails
+                     |             |
+                     v             v
+           Consume both challenges Reject; consume neither
+           atomically and accept
+           mutual proof
+
+Each peer's trust decision can use local challenge-response trust or an enrolled binding. With enrollment-based trust, the verifier checks the stored binding and its certificate and LoTW status policy.

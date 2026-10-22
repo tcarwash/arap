@@ -98,3 +98,23 @@ func TestARRLCertificateStatusRejectsFutureDatedResponse(t *testing.T) {
 		t.Fatal("accepted future-dated status response")
 	}
 }
+
+func TestARRLCertificateStatusClampsSmallServerClockLead(t *testing.T) {
+	now := time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC)
+	client := ARRLCertificateStatusClient{
+		Now: func() time.Time { return now },
+		HTTPClient: &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+			future := now.Add(time.Minute)
+			return &http.Response{StatusCode: http.StatusOK,
+				Header: http.Header{"Date": []string{future.Format(http.TimeFormat)}},
+				Body:   io.NopCloser(strings.NewReader("<LoTW_CRL><Serial>7</Serial><Status>Unrevoked</Status></LoTW_CRL>"))}, nil
+		})},
+	}
+	evidence, err := client.Check(context.Background(), &x509.Certificate{SerialNumber: big.NewInt(7)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !evidence.ObservedAt.Equal(now) {
+		t.Fatalf("slightly future status time=%s, want conservative local time %s", evidence.ObservedAt, now)
+	}
+}
