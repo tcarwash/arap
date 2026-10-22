@@ -305,7 +305,9 @@ arap enrollment verify-response --response signed-enrollment.cbor \
 
 By default, the CLI loads only self-signed roots from the local TQSL
 configuration (`$TQSLDIR/certs/root`, `%APPDATA%/TrustedQSL/certs/root`, or
-`~/.tqsl/certs/root`, depending on platform). Use `--roots` to override this
+`~/.tqsl/certs/root`, depending on platform). Use `--tqsl-directory DIR` to
+select a custom TQSL data directory and load `DIR/certs/root`; it takes
+precedence over `TQSLDIR` and platform defaults. Use `--roots` to override this
 with another PEM bundle of self-signed roots. Intermediate certificates are
 not promoted to trust anchors.
 

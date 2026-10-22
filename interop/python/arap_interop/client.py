@@ -443,7 +443,7 @@ class ArapClient:
     def verify_enrollment(
         self, response: bytes, *, audience: str, store: str, roots: str = "",
         allow_legacy_rsa_sha1: bool = True, max_status_age: str = "24h",
-        allowed_purposes: Sequence[str] = (),
+        allowed_purposes: Sequence[str] = (), tqsl_directory: str = "",
     ) -> dict[str, Any]:
         with tempfile.TemporaryDirectory(prefix="arap-python-") as temp:
             response_path = self._write(temp, "enrollment-response.cbor", response)
@@ -452,13 +452,15 @@ class ArapClient:
                     "--max-status-age", max_status_age]
             if roots:
                 args += ["--roots", roots]
+            if tqsl_directory:
+                args += ["--tqsl-directory", tqsl_directory]
             for purpose in allowed_purposes:
                 args += ["--allow-purpose", purpose]
             return self._call(args)
 
     def refresh_enrollment(
         self, accepted_response: bytes, *, callsign: str, key_id: str, store: str,
-        roots: str = "", max_status_age: str = "24h",
+        roots: str = "", max_status_age: str = "24h", tqsl_directory: str = "",
     ) -> dict[str, Any]:
         """Refresh certificate status from the retained accepted response.
 
@@ -473,6 +475,8 @@ class ArapClient:
                     "--max-status-age", max_status_age]
             if roots:
                 args += ["--roots", roots]
+            if tqsl_directory:
+                args += ["--tqsl-directory", tqsl_directory]
             return self._call(args)
 
     def list_enrollments(self, *, store: str) -> dict[str, Any]:

@@ -12,9 +12,12 @@ import (
 	"strings"
 )
 
-func enrollmentRootPath(explicit string) (string, error) {
+func enrollmentRootPath(explicit, tqslDirectory string) (string, error) {
 	if explicit != "" {
 		return explicit, nil
+	}
+	if tqslDir := strings.TrimSpace(tqslDirectory); tqslDir != "" {
+		return filepath.Join(tqslDir, "certs", "root"), nil
 	}
 	if tqslDir := strings.TrimSpace(os.Getenv("TQSLDIR")); tqslDir != "" {
 		return filepath.Join(tqslDir, "certs", "root"), nil
@@ -33,14 +36,14 @@ func enrollmentRootPath(explicit string) (string, error) {
 	return filepath.Join(home, ".tqsl", "certs", "root"), nil
 }
 
-func loadEnrollmentRoots(explicit string) (*x509.CertPool, string, error) {
-	path, err := enrollmentRootPath(explicit)
+func loadEnrollmentRoots(explicit, tqslDirectory string) (*x509.CertPool, string, error) {
+	path, err := enrollmentRootPath(explicit, tqslDirectory)
 	if err != nil {
 		return nil, "", err
 	}
 	data, err := readFileBounded(path, 1024*1024)
 	if err != nil {
-		if explicit == "" && errors.Is(err, os.ErrNotExist) {
+		if explicit == "" && strings.TrimSpace(tqslDirectory) == "" && strings.TrimSpace(os.Getenv("TQSLDIR")) == "" && errors.Is(err, os.ErrNotExist) {
 			return nil, path, fmt.Errorf("TQSL root bundle not found at %s; install/update TQSL or pass --roots PEM", path)
 		}
 		return nil, path, fmt.Errorf("read TQSL root bundle %s: %w", path, err)

@@ -162,8 +162,8 @@ func usage() {
 	fmt.Fprintln(os.Stderr, "  arap endorsement issue|pack|append|verify ...")
 	fmt.Fprintln(os.Stderr, "  arap enrollment issue --audience ID --callsign CALL --public-key FILE --store FILE --out FILE [--purpose PURPOSE ...]")
 	fmt.Fprintln(os.Stderr, "  arap enrollment respond --request FILE --private-key FILE --out FILE [--tqsl-helper FILE] [--tqsl-serial DECIMAL] [--tqsl-directory DIR]")
-	fmt.Fprintln(os.Stderr, "  arap enrollment verify-response --response FILE --audience ID --store FILE [--roots PEM] [--allow-purpose PURPOSE ...]")
-	fmt.Fprintln(os.Stderr, "  arap enrollment refresh --response FILE --callsign CALL --key-id SHA256 --store FILE [--roots PEM]")
+	fmt.Fprintln(os.Stderr, "  arap enrollment verify-response --response FILE --audience ID --store FILE [--roots PEM | --tqsl-directory DIR] [--allow-purpose PURPOSE ...]")
+	fmt.Fprintln(os.Stderr, "  arap enrollment refresh --response FILE --callsign CALL --key-id SHA256 --store FILE [--roots PEM | --tqsl-directory DIR]")
 	fmt.Fprintln(os.Stderr, "  arap enrollment list|disable --store FILE ...")
 	fmt.Fprintln(os.Stderr, "  arap resolve --server URL [--server URL ...] --reference AR1... --out FILE")
 	fmt.Fprintln(os.Stderr, "  arap publish --server URL --proof FILE (upload token from ARAP_UPLOAD_TOKEN)")
@@ -203,7 +203,7 @@ func enrollmentCommand(args []string) (int, error) {
 	privatePath := fs.String("private-key", "", "ARAP Ed25519 private key")
 	helperPath := fs.String("tqsl-helper", "", "native TQSL signing helper (or ARAP_TQSL_HELPER)")
 	serial := fs.String("tqsl-serial", "", "decimal TQSL certificate serial when multiple callsign certificates exist")
-	tqslDirectory := fs.String("tqsl-directory", "", "TQSL configuration directory (defaults to the normal user directory)")
+	tqslDirectory := fs.String("tqsl-directory", "", "TQSL data directory for helper access and certificate-root discovery")
 	passphraseStdin := fs.Bool("passphrase-stdin", false, "read two lines from stdin: ARAP key passphrase, then TQSL certificate password")
 	if err := fs.Parse(args[1:]); err != nil {
 		return 2, err
@@ -299,7 +299,7 @@ func enrollmentCommand(args []string) (int, error) {
 		if err != nil {
 			return 2, err
 		}
-		roots, _, err := loadEnrollmentRoots(*rootsPath)
+		roots, _, err := loadEnrollmentRoots(*rootsPath, *tqslDirectory)
 		if err != nil {
 			return 2, err
 		}
@@ -340,7 +340,7 @@ func enrollmentCommand(args []string) (int, error) {
 		if err != nil {
 			return 2, err
 		}
-		roots, _, err := loadEnrollmentRoots(*rootsPath)
+		roots, _, err := loadEnrollmentRoots(*rootsPath, *tqslDirectory)
 		if err != nil {
 			return 2, err
 		}

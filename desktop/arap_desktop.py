@@ -364,13 +364,14 @@ class ARAPDesktop:
         self._entry(body, 39, "TQSL native helper (optional)", "enrollment_tqsl_helper", find_tqsl_helper(), browse="open")
         self._entry(body, 40, "TQSL certificate serial (optional)", "enrollment_tqsl_serial")
         ttk.Button(body, text="List matching certificates", command=self.list_enrollment_certificates).grid(row=40, column=2, padx=(8, 0), pady=5)
+        self._entry(body, 41, "TQSL data directory (optional)", "enrollment_tqsl_directory", browse="directory")
         self._action(body, 42, "Sign enrollment challenge", self.respond_enrollment)
         ttk.Separator(body).grid(row=43, column=0, columnspan=3, sticky="ew", pady=16)
         ttk.Label(body, text="Verify enrollment response", font=("TkDefaultFont", 11, "bold")).grid(row=44, column=0, columnspan=2, sticky="w", pady=(0, 4))
         ttk.Label(body, text="Checks the certificate chain, callsign, challenge signatures and live LoTW status, then records an accepted binding in the enrollment database.", style="Sub.TLabel", wraplength=650).grid(row=45, column=0, columnspan=3, sticky="w", pady=(0, 8))
         self._entry(body, 46, "Signed response file", "enrollment_verify_response", browse="open")
         self._entry(body, 47, "Expected verifier audience", "enrollment_verify_audience")
-        self._entry(body, 48, "ARRL roots PEM override (optional)", "enrollment_verify_roots", browse="open")
+        self._entry(body, 48, "Explicit roots PEM override (optional)", "enrollment_verify_roots", browse="open")
         self._entry(body, 49, "Maximum status age in hours", "enrollment_verify_status_age", "24")
         self._action(body, 51, "Verify response and record binding", self.verify_enrollment)
         ttk.Separator(body).grid(row=52, column=0, columnspan=3, sticky="ew", pady=16)
@@ -564,7 +565,8 @@ class ARAPDesktop:
         if path: self.cli.set(path)
 
     def pick_file(self, variable: tk.StringVar, mode: str) -> None:
-        if mode == "open": path = filedialog.askopenfilename()
+        if mode == "directory": path = filedialog.askdirectory()
+        elif mode == "open": path = filedialog.askopenfilename()
         else: path = filedialog.asksaveasfilename()
         if path: variable.set(path)
 
@@ -822,6 +824,7 @@ class ARAPDesktop:
             key_id = self.enrollment_refresh_key.get().strip()
             store = self.enrollment_path.get().strip()
             roots = self.enrollment_verify_roots.get().strip()
+            tqsl_directory = self.enrollment_tqsl_directory.get().strip()
             age = self.enrollment_verify_status_age.get().strip()
             if not all((response, callsign, key_id, store, age)):
                 raise ValueError("Choose the accepted response, callsign, key fingerprint, enrollment database, and maximum status age.")
@@ -842,6 +845,8 @@ class ARAPDesktop:
                     "--max-status-age", f"{age_hours}h"]
             if roots:
                 args.extend(("--roots", roots))
+            if tqsl_directory:
+                args.extend(("--tqsl-directory", tqsl_directory))
             code, output = self.run_cli(args, (0, 1))
             detail = json.dumps(json.loads(output), indent=2)
             self._report("Certificate status refreshed" if code == 0 else "Certificate status not refreshed", detail)
@@ -888,6 +893,7 @@ class ARAPDesktop:
             output = self.enrollment_respond_out.get().strip()
             helper = self.enrollment_tqsl_helper.get().strip()
             serial = self.enrollment_tqsl_serial.get().strip()
+            tqsl_directory = self.enrollment_tqsl_directory.get().strip()
             if not all((request, key, output)):
                 raise ValueError("Choose the challenge, ARAP private key and response output file.")
             confirmed = messagebox.askyesno(
@@ -915,6 +921,8 @@ class ARAPDesktop:
             ]
             if helper:
                 args.extend(("--tqsl-helper", helper))
+            if tqsl_directory:
+                args.extend(("--tqsl-directory", tqsl_directory))
             if serial:
                 args.extend(("--tqsl-serial", serial))
             _, result = self.run_cli(args, input_text=f"{arap_password}\n{tqsl_password}\n")
@@ -930,6 +938,9 @@ class ARAPDesktop:
             args = ["enrollment", "certificates", "--request", request]
             if helper:
                 args.extend(("--tqsl-helper", helper))
+            tqsl_directory = self.enrollment_tqsl_directory.get().strip()
+            if tqsl_directory:
+                args.extend(("--tqsl-directory", tqsl_directory))
             _, output = self.run_cli(args)
             result = json.loads(output)
             certificates = result.get("certificates", [])
@@ -945,6 +956,7 @@ class ARAPDesktop:
             response = self.enrollment_verify_response.get().strip()
             audience = self.enrollment_verify_audience.get().strip()
             roots = self.enrollment_verify_roots.get().strip()
+            tqsl_directory = self.enrollment_tqsl_directory.get().strip()
             store = self.enrollment_path.get().strip()
             age = self.enrollment_verify_status_age.get().strip()
             if not all((response, audience, store, age)):
@@ -958,9 +970,13 @@ class ARAPDesktop:
 
             args = [
                 "enrollment", "verify-response", "--response", response,
-                "--audience", audience, "--roots", roots, "--store", store,
+                "--audience", audience, "--store", store,
                 "--max-status-age", f"{age_hours}h",
             ]
+            if roots:
+                args.extend(("--roots", roots))
+            if tqsl_directory:
+                args.extend(("--tqsl-directory", tqsl_directory))
             confirmed = messagebox.askyesno(
                 "Verify ARAP enrollment evidence",
                 "This verifies TQSL's RSA/SHA-1 Callsign Certificate signature and contacts LoTW for current certificate status. It evaluates authentication evidence under ARAP policy; it is not ARRL approval or endorsement. Continue?",
