@@ -474,7 +474,8 @@ card JSON (80,753). `govulncheck` found no reachable vulnerabilities; it
 reported one advisory only in a required module with no affected call path.
 
 The enrollment demo also checks that a missing helper returns a user-facing
-diagnostic and that an incorrect ARAP key password is rejected. `make
-enrollment-demo`, `make test`, `make vet`, all 12 Python client tests, the
-desktop Xvfb smoke, and `git diff --check` passed after the helper-resolution
-change.
+diagnostic and that an incorrect ARAP key password is rejected.
+`make enrollment-demo`, `make test`, `make vet`, all 12 Python client tests,
+the desktop Xvfb smoke, and `git diff --check` passed after the helper-resolution
+change. A subsequent `make race` and CGO-free `go build ./...` for Linux
+amd64/arm64, macOS amd64/arm64, and Windows amd64 also passed.
