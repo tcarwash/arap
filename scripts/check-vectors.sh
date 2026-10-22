@@ -31,6 +31,11 @@ for file in request.cbor response.cose public-key.pem manifest.json; do
   cmp "$repo_root/test-vectors/challenge-ed25519-v1/$file" "$temp_dir/challenge/$file"
 done
 
+"$python_command" "$repo_root/interop/python/generate_mutual_challenge_vector.py" "$temp_dir/mutual-challenge"
+for file in request-from-a.cbor request-from-b.cbor response-from-a.cose response-from-b.cose public-key-a.der public-key-b.der manifest.json; do
+  cmp "$repo_root/test-vectors/mutual-challenge-ed25519-v1/$file" "$temp_dir/mutual-challenge/$file"
+done
+
 "$python_command" "$repo_root/interop/python/generate_endorsement_vector.py" "$temp_dir/endorsement"
 for file in root-to-delegate.cbor delegate-to-subject.cbor chain.cbor root-public.pem subject-public.pem manifest.json; do
   cmp "$repo_root/test-vectors/key-endorsement-v1/$file" "$temp_dir/endorsement/$file"
@@ -41,4 +46,4 @@ for file in challenge.cbor manifest.json; do
   cmp "$repo_root/test-vectors/lotw-enrollment-v2/$file" "$temp_dir/lotw-enrollment-v2/$file"
 done
 
-printf '%s\n' 'Python-generated content, PixelQSO-card, challenge, endorsement and enrollment-purpose vectors match the checked-in fixtures.'
+printf '%s\n' 'Python-generated content, PixelQSO-card, one-way and mutual challenge, endorsement and enrollment-purpose vectors match the checked-in fixtures.'

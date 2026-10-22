@@ -6,7 +6,9 @@ Go tests regenerate the content and challenge COSE objects and check byte-for-by
 
 `key-endorsement-v1/` contains a two-link Ed25519 delegation chain generated independently in Python and verified by Go. Its `chain.cbor` container is also encoded byte-for-byte by Go and validated against the chain CDDL. The fixture grants the final key only `content-signature`; the issuer public key is an explicit test trust anchor. The deterministic private seeds are test-only and must never be used outside these fixtures.
 
-Run `make cddl` to independently compile the schemas against RFC 8610 and validate the checked-in content proof, challenge request and COSE response, enrollment challenge and response shape, key-endorsement chain, and both PixelQSO canonical-card vectors with the pinned `cddl` v0.10.7 tool.
+`mutual-challenge-ed25519-v1/` contains inverse requests and independently generated Ed25519 responses for both parties, sharing one session binding and validity window. The Python generator verifies both response signatures and request bindings; the Go test verifies the pair under explicit trust and consumes both requests atomically. Both requests and responses are checked against their CDDL schemas.
+
+Run `make cddl` to independently compile the schemas against RFC 8610 and validate the checked-in content proof, one-way and mutual challenge requests and responses, enrollment challenge and response shape, key-endorsement chain, and both PixelQSO canonical-card vectors with the pinned `cddl` v0.10.7 tool.
 
 More required cases:
 

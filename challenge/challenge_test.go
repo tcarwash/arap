@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"crypto/sha256"
+	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -175,6 +176,64 @@ func TestMutualChallengePairAcceptedAndReplayRejected(t *testing.T) {
 	replay := VerifyMutualPair(requests, responses, config)
 	if replay.Accepted || replay.Reason != "mutual_challenge_pair_not_pending_or_replayed" {
 		t.Fatalf("mutual pair replay accepted: %+v", replay)
+	}
+}
+
+func TestIndependentMutualChallengeVector(t *testing.T) {
+	root := filepath.Join("..", "test-vectors", "mutual-challenge-ed25519-v1")
+	read := func(name string) []byte {
+		t.Helper()
+		data, err := os.ReadFile(filepath.Join(root, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return data
+	}
+	requests := MutualRequests{FromA: read("request-from-a.cbor"), FromB: read("request-from-b.cbor")}
+	responses := MutualResponses{FromA: read("response-from-a.cose"), FromB: read("response-from-b.cose")}
+	public := func(name string) protocol.Verifier {
+		t.Helper()
+		parsed, err := x509.ParsePKIXPublicKey(read(name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		key, ok := parsed.(ed25519.PublicKey)
+		if !ok {
+			t.Fatalf("%s is not Ed25519", name)
+		}
+		verifier, err := protocol.NewEd25519Verifier(key)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return verifier
+	}
+	verifierA, verifierB := public("public-key-a.der"), public("public-key-b.der")
+	store := openStore(t, filepath.Join(t.TempDir(), "independent-mutual.sqlite"))
+	for _, raw := range [][]byte{requests.FromA, requests.FromB} {
+		req, err := DecodeRequest(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		hash := RequestHash(raw)
+		if err := store.Issue(hash[:], req.Requester, req.Responder, req.ExpiresAt); err != nil {
+			t.Fatal(err)
+		}
+	}
+	trust := func(want string) TrustDecisionFunc {
+		return func(callsign, _, purpose string) string {
+			if callsign == want && purpose == ResponsePurpose {
+				return "trusted"
+			}
+			return "untrusted"
+		}
+	}
+	result := VerifyMutualPair(requests, responses, MutualVerificationConfig{
+		VerifierA: verifierA, TrustA: trust("K7ABC"), VerifierB: verifierB,
+		TrustB: trust("AG7SU"), Store: store, Session: []byte("mutual-session-42"),
+		Now: time.Unix(1_800_000_002, 0).UTC(),
+	})
+	if !result.Accepted || result.PartyA != "K7ABC" || result.PartyB != "AG7SU" {
+		t.Fatalf("independent mutual vector rejected: %+v", result)
 	}
 }
 

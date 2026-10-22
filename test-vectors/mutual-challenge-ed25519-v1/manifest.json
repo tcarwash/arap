@@ -1,0 +1,17 @@
+{
+  "expires_at": 1800000120,
+  "issued_at": 1800000000,
+  "negative_expectations": {
+    "different_session": "mutual_purpose_or_session_mismatch",
+    "same_nonce": "requests_are_not_one_fresh_pair"
+  },
+  "party_a": "K7ABC",
+  "party_b": "AG7SU",
+  "private_seeds_are_test_only": true,
+  "profile": "ARAP",
+  "purpose": "station-auth",
+  "request_a_sha256": "43b224e60b70550e46f5eb9d371038e70b593fee698f7257a359ec86c667231d",
+  "request_b_sha256": "b0991ede9c18639927b36de80f3b3eeb42482554724fba373f592cf5cf000b72",
+  "session_binding_hex": "6d757475616c2d73657373696f6e2d3432",
+  "version": 1
+}

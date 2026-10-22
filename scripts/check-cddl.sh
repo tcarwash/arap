@@ -32,9 +32,13 @@ done
 "$cddl_command" --ci validate --cddl "$repo_root/spec/ARAP-profile-v1.cddl" \
   --cbor "$repo_root/test-vectors/content-ed25519-v1/proof.cbor"
 "$cddl_command" --ci validate --cddl "$repo_root/spec/ARAP-challenge-v1.cddl" \
-  --cbor "$repo_root/test-vectors/challenge-ed25519-v1/request.cbor"
+  --cbor "$repo_root/test-vectors/challenge-ed25519-v1/request.cbor" \
+  --cbor "$repo_root/test-vectors/mutual-challenge-ed25519-v1/request-from-a.cbor" \
+  --cbor "$repo_root/test-vectors/mutual-challenge-ed25519-v1/request-from-b.cbor"
 "$cddl_command" --ci validate --cddl "$repo_root/spec/ARAP-challenge-response-v1.cddl" \
-  --cbor "$repo_root/test-vectors/challenge-ed25519-v1/response.cose"
+  --cbor "$repo_root/test-vectors/challenge-ed25519-v1/response.cose" \
+  --cbor "$repo_root/test-vectors/mutual-challenge-ed25519-v1/response-from-a.cose" \
+  --cbor "$repo_root/test-vectors/mutual-challenge-ed25519-v1/response-from-b.cose"
 "$cddl_command" --ci validate --cddl "$repo_root/spec/ARAP-lotw-enrollment-v1.cddl" \
   --cbor "$repo_root/test-vectors/lotw-enrollment-v1/challenge.cbor"
 "$cddl_command" --ci validate --cddl "$repo_root/spec/ARAP-lotw-enrollment-v2.cddl" \
