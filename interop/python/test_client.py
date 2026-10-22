@@ -302,9 +302,10 @@ class ClientIntegrationTest(unittest.TestCase):
         self.assertEqual(purpose_request["result"]["version"], 2)
         self.assertEqual(purpose_request["result"]["purposes"],
                          ["challenge-response", "content-signature"])
-        with self.assertRaisesRegex(ValueError, "legacy RSA-SHA1"):
+        with self.assertRaises(ArapError) as caught:
             self.client.respond_enrollment(result["request"], private_key=str(self.private),
                                             helper="arap-tqsl-sign")
+        self.assertNotIn("explicit opt-in", str(caught.exception))
 
     def test_lotw_certificate_listing_is_read_only_application_operation(self) -> None:
         issued = self.client.issue_enrollment(

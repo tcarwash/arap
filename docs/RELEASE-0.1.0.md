@@ -107,7 +107,9 @@ completeness.
   Core proof verification must not implicitly fetch network data or mutate trust.
 - [x] Expose experimental LoTW enrollment challenge/response, verification and
   local list/disable operations through the Python wrapper. Existing enrollment
-  signature policy remains explicit opt-in.
+  TQSL-supported RSA/SHA-1 enrollment signatures are accepted only for the
+  short-lived enrollment assertion; ARAP content and challenge signatures
+  remain Ed25519.
 - [ ] Exercise those wrapper operations with a real station certificate and
   live certificate-status check at the final live-validation stage; verify
   refresh/expiry and disablement from an independently maintained consumer.

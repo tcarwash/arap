@@ -1,0 +1,84 @@
+name: Draft beta release
+
+on:
+  push:
+    tags:
+      - 'v0.1.0-beta.*'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: draft-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_TAG: ${{ github.ref_name }}
+      RELEASE_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Validate tag and require a project license
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v0\.1\.0-beta\.[0-9]+$ ]]
+          if [[ ! -f LICENSE ]]; then
+            echo 'The beta draft is blocked until the project owner selects and adds LICENSE.' >&2
+            exit 1
+          fi
+      - name: Wait for successful native CI on this exact tag
+        run: |
+          deadline=$((SECONDS + 21000))
+          while (( SECONDS < deadline )); do
+            runs=$(gh run list --workflow CI --commit "$RELEASE_SHA" \
+              --json databaseId,status,conclusion,event,headBranch --limit 100)
+            run=$(jq -c --arg tag "$RELEASE_TAG" \
+              '[.[] | select(.event == "push" and .headBranch == $tag)] | sort_by(.databaseId) | last // empty' \
+              <<<"$runs")
+            if [[ -n "$run" ]]; then
+              status=$(jq -r '.status' <<<"$run")
+              if [[ "$status" == completed ]]; then
+                conclusion=$(jq -r '.conclusion' <<<"$run")
+                [[ "$conclusion" == success ]] || { echo "Native CI concluded $conclusion" >&2; exit 1; }
+                echo "CI_RUN_ID=$(jq -r '.databaseId' <<<"$run")" >> "$GITHUB_ENV"
+                exit 0
+              fi
+            fi
+            sleep 20
+          done
+          echo 'No successful exact-tag CI run appeared before the wait deadline.' >&2
+          exit 1
+      - uses: actions/download-artifact@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.CI_RUN_ID }}
+          pattern: arap-desktop-supported-*
+          path: ${{ runner.temp }}/arap-native-artifacts
+      - name: Assemble versioned assets and inventory
+        run: |
+          python3 scripts/assemble-release-inventory.py \
+            "${{ runner.temp }}/arap-native-artifacts" \
+            "${{ runner.temp }}/arap-release-assets" "$RELEASE_TAG"
+          cd "${{ runner.temp }}/arap-release-assets"
+          sha256sum arap-desktop-*.zip DEPENDENCY-LICENSE-INVENTORY.csv > SHA256SUMS
+      - name: Create or refresh the draft prerelease
+        run: |
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 && {
+            echo "A release already exists for $RELEASE_TAG; refusing to modify it automatically." >&2
+            exit 1
+          }
+          gh release create "$RELEASE_TAG" \
+            "${{ runner.temp }}/arap-release-assets/"* \
+            --draft --prerelease --verify-tag \
+            --title "ARAP $RELEASE_TAG" \
+            --notes-file docs/BETA-RELEASE-NOTES.md

@@ -64,6 +64,8 @@ def main() -> int:
             required.add("OPENSSL-LICENSE.txt")
         elif enrollment and target == "windows-amd64":
             required.add("VCPKG-DEPENDENCY-NOTICES.txt")
+    if (Path(__file__).resolve().parents[1] / "LICENSE").is_file():
+        required.add("LICENSE")
     with zipfile.ZipFile(archive) as bundle:
         bad_member = bundle.testzip()
         if bad_member:

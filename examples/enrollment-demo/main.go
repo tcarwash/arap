@@ -219,7 +219,7 @@ func verify(args []string) error {
 		CertificateStatus: func(*x509.Certificate) lotwenroll.StatusEvidence {
 			return lotwenroll.StatusEvidence{Status: lotwenroll.StatusGood, Source: "synthetic-demo-only", ObservedAt: now}
 		},
-		MaxStatusAge: time.Hour, Store: store, EnableLegacyRSASHA1: true,
+		MaxStatusAge: time.Hour, Store: store,
 		AllowedPurposes: []string{lotwenroll.PurposeChallengeResponse, lotwenroll.PurposeContentSignature},
 	})
 	if err := json.NewEncoder(os.Stdout).Encode(result); err != nil {
@@ -279,7 +279,7 @@ func negatives(args []string) error {
 		CertificateStatus: func(*x509.Certificate) lotwenroll.StatusEvidence {
 			return lotwenroll.StatusEvidence{Status: lotwenroll.StatusGood, Source: "synthetic-demo-only", ObservedAt: now}
 		},
-		MaxStatusAge: time.Hour, Store: rejectStore{}, EnableLegacyRSASHA1: true,
+		MaxStatusAge: time.Hour, Store: rejectStore{},
 		AllowedPurposes: []string{lotwenroll.PurposeChallengeResponse, lotwenroll.PurposeContentSignature},
 	}
 	check := func(name, want string, response lotwenroll.Response, config lotwenroll.VerifyConfig) error {

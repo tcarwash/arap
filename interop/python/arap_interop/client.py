@@ -407,10 +407,8 @@ class ArapClient:
         self, request: bytes, *, private_key: str, helper: str,
         arap_passphrase: str = "", tqsl_passphrase: str = "", serial: str = "",
         tqsl_directory: str = "",
-        allow_legacy_rsa_sha1: bool = False,
+        allow_legacy_rsa_sha1: bool = True,
     ) -> dict[str, Any]:
-        if not allow_legacy_rsa_sha1:
-            raise ValueError("TQSL enrollment uses legacy RSA-SHA1; explicit opt-in is required")
         with tempfile.TemporaryDirectory(prefix="arap-python-") as temp:
             request_path = self._write(temp, "enrollment.cbor", request)
             response = os.path.join(temp, "enrollment-response.cbor")
@@ -444,7 +442,7 @@ class ArapClient:
 
     def verify_enrollment(
         self, response: bytes, *, audience: str, store: str, roots: str = "",
-        allow_legacy_rsa_sha1: bool = False, max_status_age: str = "24h",
+        allow_legacy_rsa_sha1: bool = True, max_status_age: str = "24h",
         allowed_purposes: Sequence[str] = (),
     ) -> dict[str, Any]:
         with tempfile.TemporaryDirectory(prefix="arap-python-") as temp:
@@ -454,8 +452,7 @@ class ArapClient:
                     "--max-status-age", max_status_age]
             if roots:
                 args += ["--roots", roots]
-            if allow_legacy_rsa_sha1:
-                args += ["--allow-legacy-rsa-sha1"]
+            args += ["--allow-legacy-rsa-sha1"]
             for purpose in allowed_purposes:
                 args += ["--allow-purpose", purpose]
             return self._call(args)

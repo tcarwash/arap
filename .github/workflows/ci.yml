@@ -293,29 +293,30 @@ jobs:
           fi
           target_commit=$(git -C .trustedqsl-source rev-parse HEAD)
           TQSL_VERSION=2.8.7 TQSL_REVISION="$target_commit" \
-            ARAP_TQSL_HELPER_DIR="$helper_dir" ARAP_VERSION="${{ github.sha }}" \
+            ARAP_TQSL_HELPER_DIR="$helper_dir" \
+            ARAP_VERSION="${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || github.sha }}" \
             scripts/package-desktop.sh "${{ matrix.target }}"
           ${{ matrix.python-command }} scripts/check-desktop-bundle.py \
-            "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip" \
+            "dist/arap-desktop-${{ matrix.target }}-${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || github.sha }}.zip" \
             "${{ matrix.target }}" --enrollment
           ${{ matrix.python-command }} scripts/check-packaged-tqsl-helper.py \
-            "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip" \
+            "dist/arap-desktop-${{ matrix.target }}-${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || github.sha }}.zip" \
             "${{ matrix.target }}"
           if [[ "${{ matrix.runner-os }}" == linux ]]; then
             python3 scripts/check-installed-python-consumer.py \
-              --bundle "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip" \
+              --bundle "dist/arap-desktop-${{ matrix.target }}-${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || github.sha }}.zip" \
               --target "${{ matrix.target }}"
           else
             ${{ matrix.python-command }} scripts/check-installed-python-consumer.py \
-              --bundle "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip" \
+              --bundle "dist/arap-desktop-${{ matrix.target }}-${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || github.sha }}.zip" \
               --target "${{ matrix.target }}"
           fi
       - name: Launch native Tk desktop and adjacent CLI
         shell: bash
-        run: ${{ matrix.python-command }} scripts/check-desktop-ui.py --bundle "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip"
+        run: ${{ matrix.python-command }} scripts/check-desktop-ui.py --bundle "dist/arap-desktop-${{ matrix.target }}-${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || github.sha }}.zip"
       - uses: actions/upload-artifact@v7
         with:
           name: arap-desktop-supported-${{ matrix.target }}
-          path: dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip
+          path: dist/arap-desktop-${{ matrix.target }}-${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || github.sha }}.zip
           if-no-files-found: error
           retention-days: 7

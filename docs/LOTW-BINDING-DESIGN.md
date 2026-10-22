@@ -205,9 +205,10 @@ fingerprint, and defines a dual-signature response. The verifier checks the
 certificate chain against caller-supplied roots, callsign through a required
 issuer-specific extractor, key usage, configured status evidence, the TQSL
 RSA/SHA-1 signature, the Ed25519 signature, audience, freshness, and one-time
-challenge consumption. The verifier refuses enrollment by default; enabling
-`EnableLegacyRSASHA1` is an explicit policy switch. Tests use a locally
-generated fake CA and synthetic credentials only.
+challenge consumption. TQSL's supported RSA/SHA-1 signature is accepted for
+this short-lived enrollment assertion only; ARAP content and challenge
+signatures remain Ed25519. Tests use a locally generated fake CA and synthetic
+credentials only.
 
 `lotwenroll.SQLiteStore` persists challenge state and accepted call/key
 bindings together. Completion checks that the persisted challenge callsign
@@ -232,8 +233,7 @@ arap enrollment issue --audience verifier.example --callsign AG7SU \
 
 arap enrollment verify-response --response enrollment-response.cbor \
   --audience verifier.example --allow-purpose content-signature \
-  --store ~/.local/state/arap/lotw-enrollment.sqlite --roots arrl-roots.pem \
-  --allow-legacy-rsa-sha1
+  --store ~/.local/state/arap/lotw-enrollment.sqlite --roots arrl-roots.pem
 ```
 
 The receiving application then verifies content with that enrollment store and
@@ -293,8 +293,9 @@ by TLS and server time, not by a LoTW signature on the status response.
 The CLI verifier uses this provider after validating the response certificate
 chain and callsign. It accepts only the `Unrevoked` response as good; revoked,
 superseded, expired, malformed, mismatched-serial, stale, and unknown results
-fail closed. Its legacy TQSL RSA/SHA-1 signature policy remains disabled
-unless `--allow-legacy-rsa-sha1` is explicitly passed:
+fail closed. TQSL's supported RSA/SHA-1 signature is accepted only for this
+short-lived enrollment assertion; ARAP content and challenge signatures remain
+Ed25519:
 
 ```sh
 arap enrollment verify-response --response signed-enrollment.cbor \
@@ -327,13 +328,12 @@ decimal certificate serial. The CLI reads the ARAP key password and TQSL
 certificate password from two stdin lines, or the desktop prompts for them.
 Passwords are not command-line arguments.
 
-The signer deliberately requires `--allow-legacy-rsa-sha1` (and the desktop
-requires its unchecked-by-default control plus confirmation) because the
-TQSL API hardcodes RSA/SHA-1. This opt-in is local user consent for that
-operation; it does not mean the flow has passed security review or is endorsed
-by ARRL. Do not use the QSO date-range/log-signing workflow to create an
-enrollment assertion. Responding signs only the challenge bytes and does not
-submit a QSO.
+The signer uses the RSA/SHA-1 algorithm supported by TQSL's Callsign
+Certificate data-block API. This is limited to the short-lived enrollment
+assertion; ARAP content and challenge signatures remain Ed25519. Acceptance
+under ARAP policy does not mean the flow is approved or endorsed by ARRL. Do not
+use the QSO date-range/log-signing workflow to create an enrollment assertion.
+Responding signs only the challenge bytes and does not submit a QSO.
 
 This remains an experimental enrollment path, not a production or ARRL-approved
 workflow. The optional client adapter is built against TrustedQSL source and

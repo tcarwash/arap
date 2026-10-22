@@ -364,8 +364,6 @@ class ARAPDesktop:
         self._entry(body, 39, "TQSL native helper (optional)", "enrollment_tqsl_helper", find_tqsl_helper(), browse="open")
         self._entry(body, 40, "TQSL certificate serial (optional)", "enrollment_tqsl_serial")
         ttk.Button(body, text="List matching certificates", command=self.list_enrollment_certificates).grid(row=40, column=2, padx=(8, 0), pady=5)
-        self.enrollment_sign_allow_legacy = tk.BooleanVar(value=False)
-        tk.Checkbutton(body, text="Allow TQSL's legacy RSA/SHA-1 signature for this enrollment assertion", variable=self.enrollment_sign_allow_legacy, wraplength=650, justify="left").grid(row=41, column=0, columnspan=3, sticky="w", pady=(8, 4))
         self._action(body, 42, "Sign enrollment challenge", self.respond_enrollment)
         ttk.Separator(body).grid(row=43, column=0, columnspan=3, sticky="ew", pady=16)
         ttk.Label(body, text="Verify enrollment response", font=("TkDefaultFont", 11, "bold")).grid(row=44, column=0, columnspan=2, sticky="w", pady=(0, 4))
@@ -374,14 +372,6 @@ class ARAPDesktop:
         self._entry(body, 47, "Expected verifier audience", "enrollment_verify_audience")
         self._entry(body, 48, "ARRL roots PEM override (optional)", "enrollment_verify_roots", browse="open")
         self._entry(body, 49, "Maximum status age in hours", "enrollment_verify_status_age", "24")
-        self.enrollment_allow_legacy_rsa_sha1 = tk.BooleanVar(value=False)
-        tk.Checkbutton(
-            body,
-            text="Accept TQSL's legacy RSA/SHA-1 signature for this enrollment assertion",
-            variable=self.enrollment_allow_legacy_rsa_sha1,
-            wraplength=650,
-            justify="left",
-        ).grid(row=50, column=0, columnspan=3, sticky="w", pady=(8, 4))
         self._action(body, 51, "Verify response and record binding", self.verify_enrollment)
         ttk.Separator(body).grid(row=52, column=0, columnspan=3, sticky="ew", pady=16)
         ttk.Label(body, text="Refresh accepted certificate status", font=("TkDefaultFont", 11, "bold")).grid(row=53, column=0, columnspan=2, sticky="w", pady=(0, 4))
@@ -879,11 +869,9 @@ class ARAPDesktop:
             serial = self.enrollment_tqsl_serial.get().strip()
             if not all((request, key, output)):
                 raise ValueError("Choose the challenge, ARAP private key and response output file.")
-            if not self.enrollment_sign_allow_legacy.get():
-                raise ValueError("Enable the RSA/SHA-1 policy checkbox to proceed. TQSL's raw challenge API uses this legacy algorithm.")
             confirmed = messagebox.askyesno(
-                "Legacy TQSL enrollment signature",
-                "This signs the fresh ARAP enrollment challenge with TQSL's legacy RSA/SHA-1 API and also signs it with the matching ARAP Ed25519 key. It does not create or upload a QSO. Continue?",
+                "Sign ARAP enrollment challenge",
+                "TQSL signs the fresh enrollment challenge using the RSA/SHA-1 algorithm supported by its Callsign Certificate API. ARAP signs the same challenge with Ed25519. This provides authentication evidence for ARAP; it does not create or upload a QSO, or create an ARRL-approved login. Continue?",
                 parent=self.root,
             )
             if not confirmed:
@@ -952,15 +940,14 @@ class ARAPDesktop:
                 "--audience", audience, "--roots", roots, "--store", store,
                 "--max-status-age", f"{age_hours}h",
             ]
-            if self.enrollment_allow_legacy_rsa_sha1.get():
-                confirmed = messagebox.askyesno(
-                    "Legacy TQSL signature policy",
-                    "This verifies an enrollment assertion with TQSL's legacy RSA/SHA-1 signature and contacts LoTW for certificate status. Continue?",
-                    parent=self.root,
-                )
-                if not confirmed:
-                    return
-                args.append("--allow-legacy-rsa-sha1")
+            confirmed = messagebox.askyesno(
+                "Verify ARAP enrollment evidence",
+                "This verifies TQSL's RSA/SHA-1 Callsign Certificate signature and contacts LoTW for current certificate status. It evaluates authentication evidence under ARAP policy; it is not ARRL approval or endorsement. Continue?",
+                parent=self.root,
+            )
+            if not confirmed:
+                return
+            args.append("--allow-legacy-rsa-sha1")
             code, output = self.run_cli(args, (0, 1))
             detail = json.dumps(json.loads(output), indent=2)
             title = "Enrollment accepted" if code == 0 else "Enrollment not accepted"

@@ -194,7 +194,7 @@ The current stable Go 1.27.3 also passed `make test` and `make vet`, confirming 
 
 On 2026-10-20, an initial local TQSL smoke test used the configured station credential to sign one generated synthetic ADIF contact. No `.tq8` was uploaded, but TQSL warned that it may treat the contact as already uploaded on a later submission. Do not upload that generated file. This was not ARAP or LoTW authentication evidence. Future synthetic ADIF signing must use TQSL 2.8.3 or later with `-z`, which signs without upload tracking. The separate fresh-challenge enrollment protocol has since been exercised with synthetic TQSL certificates; real station-certificate and live status validation remain deferred to final testing.
 
-The installed TQSL 2.8.7-rc5 completed a synthetic ADIF `-z` test-sign run and explicitly reported that it had not recorded the QSO; no upload was made. The `lotwenroll` verifier passes fake-CA and synthetic TQSL certificate round trips, dual-signature verification and replay rejection using generated RSA and Ed25519 keys. Its SQLite store atomically consumes a nonce and records the binding, survives reopen, rejects a mismatched key fingerprint, and supports disablement. Version 1 enrollment remains challenge-response-only; version 2 carries explicitly allowed purposes and can authorize content when the verifier opts in. The CLI content path checks that purpose along with certificate expiry and status age. RSA/SHA-1 is accepted only for the short-lived TQSL enrollment assertion, under explicit policy acknowledgement; ARAP content/challenge signatures remain Ed25519. The pinned CDDL 0.10.7 validator compiles the version 1 and version 2 enrollment challenges plus the response schema; both challenge vectors and all existing vectors validate. Real station-certificate and live status behavior remain final validation steps.
+The installed TQSL 2.8.7-rc5 completed a synthetic ADIF `-z` test-sign run and explicitly reported that it had not recorded the QSO; no upload was made. The `lotwenroll` verifier passes fake-CA and synthetic TQSL certificate round trips, dual-signature verification and replay rejection using generated RSA and Ed25519 keys. Its SQLite store atomically consumes a nonce and records the binding, survives reopen, rejects a mismatched key fingerprint, and supports disablement. Version 1 enrollment remains challenge-response-only; version 2 carries explicitly allowed purposes and can authorize content when the verifier opts in. The CLI content path checks that purpose along with certificate expiry and status age. TQSL-supported RSA/SHA-1 is accepted only for the short-lived enrollment assertion; ARAP content/challenge signatures remain Ed25519. The pinned CDDL 0.10.7 validator compiles the version 1 and version 2 enrollment challenges plus the response schema; both challenge vectors and all existing vectors validate. Real station-certificate and live status behavior remain final validation steps.
 
 After that validation snapshot, `arap enrollment issue` and
 `arap enrollment verify-response` were added. The latter queries TQSL's public
@@ -221,8 +221,8 @@ TQSLLIB bridge. The bridge selects one current issued certificate for the
 challenge callsign (or the selected decimal serial), signs the exact challenge
 bytes, returns only the signature and public certificate chain, and calls
 `tqsl_endSigning` on cleanup. The CLI checks the ARAP key fingerprint before
-starting TQSL and requires `--allow-legacy-rsa-sha1`; the desktop has a
-default-off control and confirmation. No QSO is created or submitted.
+starting TQSL; the desktop explains the signature and asks before signing.
+No QSO is created or submitted.
 
 On 2026-10-20, `go build ./...`, `go test ./...`, Python bytecode compilation,
 shell syntax validation, and a native helper build against the local TrustedQSL

@@ -37,6 +37,7 @@ cp "$repo_root/desktop/arap_desktop.py" "$stage/"
 cp "$repo_root/desktop/$launcher" "$stage/"
 cp "$repo_root/desktop/BUNDLE-README.md" "$stage/README.md"
 cp "$repo_root/docs/FIRST-RUN.md" "$repo_root/docs/BUG_REPORT_TEMPLATE.md" "$stage/"
+if [[ -f "$repo_root/LICENSE" ]]; then cp "$repo_root/LICENSE" "$stage/LICENSE"; fi
 mkdir -p "$stage/docs" "$stage/spec" "$stage/examples/content-proof" \
   "$stage/examples/mutual-auth" "$stage/interop/python/arap_interop"
 cp "$repo_root/docs/API-CAPABILITIES.md" "$repo_root/docs/MACHINE-INTERFACE.md" \
@@ -63,8 +64,8 @@ for applications that own their transport, storage and authorization policy.
 - [Keyserver operations](docs/KEYSERVER.md)
 
 The first-run guide and beta limitations are in `FIRST-RUN.md`. Experimental
-TQSL enrollment is supported only by the Linux amd64 bundle and is not an
-ARRL-approved login or LoTW transaction.
+TQSL enrollment is included in the native platform bundles and provides ARAP
+authentication evidence; it is not an ARRL-approved login or endorsement.
 EOF
 cp \
   "$repo_root/spec/ARAP-profile-v1.cddl" \

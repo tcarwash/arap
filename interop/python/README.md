@@ -87,13 +87,15 @@ retrieved proofs and apply their own identity policy.
   the application session.
 - The caller chooses trust bindings, expected purpose, root authority, and
   enrollment status policy. The wrapper performs no implicit network lookup.
-- LoTW enrollment response signing is experimental. It requires the explicit
-  `allow_legacy_rsa_sha1=True` argument, the native TQSL helper, and may require
-  a separate TQSL certificate password. `tqsl_directory` can select an explicit
+- LoTW enrollment response signing is experimental. It uses TQSL's supported
+  RSA-SHA1 signature only for the short-lived enrollment assertion and requires
+  the native TQSL helper; it may require a separate TQSL certificate password.
+  The `allow_legacy_rsa_sha1` argument remains accepted for compatibility.
+  `tqsl_directory` can select an explicit
   TQSL data directory; the default remains the user's normal TQSL configuration.
   Verification depends on configured
-  roots and the live certificate-status provider. Review the legacy signature
-  policy before enabling this feature.
+  TQSL/ARRL roots and the live certificate-status provider. The evidence is
+  evaluated under ARAP policy and is not an ARRL-approved login or endorsement.
 - The passphrase argument is sent only over child stdin and is not included in
   argv, output, or exception messages. Load it from an OS secret store; avoid
   hard-coding it as in the illustrative snippet above.

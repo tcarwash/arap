@@ -80,7 +80,7 @@ func TestEnrollmentRoundTripAndReplay(t *testing.T) {
 	roots.AddCert(mustCert(t, rootDER))
 	config := VerifyConfig{Audience: "https://verifier.example", Roots: roots, Now: now, CallsignFromCert: func(c *x509.Certificate) (string, error) { return c.Subject.CommonName, nil }, CertificateStatus: func(*x509.Certificate) StatusEvidence {
 		return StatusEvidence{Status: StatusGood, Source: "synthetic-test-ca-status", ObservedAt: now}
-	}, MaxStatusAge: time.Hour, Store: store, EnableLegacyRSASHA1: true}
+	}, MaxStatusAge: time.Hour, Store: store}
 	staleStore := &testStore{}
 	if err := Issue(encoded, staleStore); err != nil {
 		t.Fatal(err)
@@ -185,13 +185,13 @@ func TestEnrollmentPolicyGateAndWrongAudience(t *testing.T) {
 		t.Fatal(err)
 	}
 	store := &testStore{}
-	config := VerifyConfig{Audience: "https://wrong.example", Roots: x509.NewCertPool(), CallsignFromCert: func(*x509.Certificate) (string, error) { return "N0CALL", nil }, Store: store, EnableLegacyRSASHA1: true}
+	config := VerifyConfig{Audience: "https://wrong.example", Roots: x509.NewCertPool(), CallsignFromCert: func(*x509.Certificate) (string, error) { return "N0CALL", nil }, Store: store}
 	if result := Verify(Response{Challenge: encoded}, config); result.Accepted || result.Reason != "challenge audience mismatch" {
 		t.Fatalf("wrong audience was not rejected: %+v", result)
 	}
 	config = VerifyConfig{Audience: "https://expected.example", Roots: x509.NewCertPool(), CallsignFromCert: func(*x509.Certificate) (string, error) { return "N0CALL", nil }, Store: store}
-	if result := Verify(Response{Challenge: encoded}, config); result.Accepted || result.Reason != "legacy TQSL RSA-SHA1 enrollment signatures are disabled by policy" {
-		t.Fatalf("legacy policy gate did not fail closed: %+v", result)
+	if result := Verify(Response{Challenge: encoded}, config); result.Accepted || result.Reason != "challenge audience mismatch" {
+		t.Fatalf("audience policy did not fail closed: %+v", result)
 	}
 }
 

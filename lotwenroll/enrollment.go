@@ -120,10 +120,6 @@ type VerifyConfig struct {
 	// AllowedPurposes is verifier policy for version 2 enrollment challenges.
 	// An empty value preserves the version 1 challenge-response-only policy.
 	AllowedPurposes []string
-	// EnableLegacyRSASHA1 is an explicit temporary policy gate for TQSL's
-	// current data-block API. It must remain false unless deployment policy
-	// explicitly accepts RSA/SHA-1 for this short-lived enrollment operation.
-	EnableLegacyRSASHA1 bool
 }
 
 type Verification struct {
@@ -401,9 +397,6 @@ func Verify(response Response, config VerifyConfig) Verification {
 	fail := func(reason string) Verification { result.Reason = reason; return result }
 	if config.Roots == nil || config.Store == nil {
 		return fail("verifier roots and enrollment store are required")
-	}
-	if !config.EnableLegacyRSASHA1 {
-		return fail("legacy TQSL RSA-SHA1 enrollment signatures are disabled by policy")
 	}
 	now := config.Now
 	if now.IsZero() {

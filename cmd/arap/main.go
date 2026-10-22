@@ -161,8 +161,8 @@ func usage() {
 	fmt.Fprintln(os.Stderr, "  arap challenge mutual-verify --request-from-a FILE --response-from-b FILE --request-from-b FILE --response-from-a FILE ...")
 	fmt.Fprintln(os.Stderr, "  arap endorsement issue|pack|append|verify ...")
 	fmt.Fprintln(os.Stderr, "  arap enrollment issue --audience ID --callsign CALL --public-key FILE --store FILE --out FILE [--purpose PURPOSE ...]")
-	fmt.Fprintln(os.Stderr, "  arap enrollment respond --request FILE --private-key FILE --out FILE --allow-legacy-rsa-sha1 [--tqsl-helper FILE] [--tqsl-serial DECIMAL] [--tqsl-directory DIR]")
-	fmt.Fprintln(os.Stderr, "  arap enrollment verify-response --response FILE --audience ID --store FILE [--roots PEM] [--allow-purpose PURPOSE ...] [--allow-legacy-rsa-sha1]")
+	fmt.Fprintln(os.Stderr, "  arap enrollment respond --request FILE --private-key FILE --out FILE [--tqsl-helper FILE] [--tqsl-serial DECIMAL] [--tqsl-directory DIR]")
+	fmt.Fprintln(os.Stderr, "  arap enrollment verify-response --response FILE --audience ID --store FILE [--roots PEM] [--allow-purpose PURPOSE ...]")
 	fmt.Fprintln(os.Stderr, "  arap enrollment refresh --response FILE --callsign CALL --key-id SHA256 --store FILE [--roots PEM]")
 	fmt.Fprintln(os.Stderr, "  arap enrollment list|disable --store FILE ...")
 	fmt.Fprintln(os.Stderr, "  arap resolve --server URL [--server URL ...] --reference AR1... --out FILE")
@@ -195,7 +195,10 @@ func enrollmentCommand(args []string) (int, error) {
 	fs.Var(&enrollmentPurposes, "purpose", "key purpose requested by this verifier; repeatable; omitted means v1 challenge-response-only")
 	var allowedEnrollmentPurposes stringListFlag
 	fs.Var(&allowedEnrollmentPurposes, "allow-purpose", "enrollment purpose accepted by this verifier; repeatable; default challenge-response")
-	allowLegacyRSASHA1 := fs.Bool("allow-legacy-rsa-sha1", false, "explicitly accept TQSL's legacy RSA-SHA1 enrollment signature")
+	// Retained as a no-op for compatibility with existing scripts. TQSL's
+	// supported RSA/SHA-1 is the enrollment signature profile; ARAP's own
+	// content and challenge signatures remain Ed25519.
+	_ = fs.Bool("allow-legacy-rsa-sha1", false, "deprecated compatibility flag; TQSL RSA-SHA1 is accepted for enrollment only")
 	requestPath := fs.String("request", "", "enrollment challenge CBOR")
 	privatePath := fs.String("private-key", "", "ARAP Ed25519 private key")
 	helperPath := fs.String("tqsl-helper", "", "native TQSL signing helper (or ARAP_TQSL_HELPER)")
@@ -219,9 +222,6 @@ func enrollmentCommand(args []string) (int, error) {
 	}
 	switch args[0] {
 	case "respond":
-		if !*allowLegacyRSASHA1 {
-			return 2, errors.New("TQSL enrollment signing uses legacy RSA-SHA1; explicitly enable it with --allow-legacy-rsa-sha1")
-		}
 		if *requestPath == "" || *privatePath == "" || *out == "" {
 			return 2, errors.New("enrollment respond requires --request, --private-key and --out")
 		}
@@ -307,7 +307,7 @@ func enrollmentCommand(args []string) (int, error) {
 		var statusErr error
 		verification := lotwenroll.VerifyEncoded(encoded, lotwenroll.VerifyConfig{
 			Audience: *audience, Roots: roots, Now: time.Now().UTC(), Store: store,
-			MaxStatusAge: *maxStatusAge, EnableLegacyRSASHA1: *allowLegacyRSASHA1,
+			MaxStatusAge:    *maxStatusAge,
 			AllowedPurposes: []string(allowedEnrollmentPurposes),
 			CertificateStatus: func(cert *x509.Certificate) lotwenroll.StatusEvidence {
 				evidence, err := statusClient.Check(context.Background(), cert)

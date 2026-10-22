@@ -72,7 +72,7 @@ methods always select stdin mode, so they never unexpectedly prompt.
 | `append_endorsement` | Existing chain and next link bytes; returns `chain` bytes | Extends an encoded chain |
 | `verify_endorsement_chain` | Chain bytes, explicit root authority, expected subject and purpose | Applies offline endorsement policy |
 | `issue_enrollment` | Audience, callsign, Ed25519 public key, optional requested purposes and caller-owned enrollment DB; returns `request` bytes | Creates a version 1 challenge-response-only or version 2 purpose-scoped LoTW/TQSL enrollment challenge |
-| `respond_enrollment` | Enrollment request bytes, ARAP private key, TQSL helper, and two secret strings; optional serial and isolated TQSL directory; returns `response` bytes | Uses the installed TQSL helper to create the legacy RSA-SHA1 enrollment response after explicit opt-in |
+| `respond_enrollment` | Enrollment request bytes, ARAP private key, TQSL helper, and two secret strings; optional serial and isolated TQSL directory; returns `response` bytes | Uses the installed TQSL helper to create the TQSL-supported RSA-SHA1 enrollment response |
 | `list_enrollment_certificates` | Enrollment request bytes; optional TQSL helper and data directory | Returns public serial metadata for current TQSL certificates matching the challenge callsign; it does not prompt for a password |
 | `verify_enrollment` | Response bytes, audience, enrollment DB, explicit allowed-purpose set, optional roots and status-age limit | Validates certificate evidence and performs the configured live status check; version 1 defaults to challenge-response only |
 | `refresh_enrollment` | Previously accepted response bytes, callsign/key fingerprint, enrollment DB and optional roots | Revalidates the matching certificate and obtains fresh status without re-enabling disabled bindings |
@@ -87,12 +87,14 @@ transport, session construction, authorization after authentication, and
 status-refresh scheduling remain application responsibilities. The wrapper
 does not perform network access or mutate trust policy.
 
-LoTW/TQSL enrollment remains experimental. `respond_enrollment` refuses to
-run unless `allow_legacy_rsa_sha1=True` is supplied because the available TQSL
-signing API uses RSA-SHA1. Verification requires the TQSL helper for response
-creation, trusted ARRL roots as appropriate, and an available certificate
-status service. The wrapper does not make those external dependencies reliable
-or turn a stale status result into current evidence.
+LoTW/TQSL enrollment remains experimental. It uses the RSA-SHA1 signature
+supported by the TQSL Callsign Certificate API only for the short-lived,
+audience-bound enrollment assertion; ARAP content and challenge signatures use
+Ed25519. The legacy `allow_legacy_rsa_sha1` argument remains accepted for
+source compatibility but is no longer required. Verification requires the
+TQSL helper, configured TQSL/ARRL roots, and an available certificate status
+service. Enrollment is ARAP authentication evidence, not an ARRL-approved
+login or endorsement.
 
 The CLI equivalent of `list_enrollment_certificates` is
 `arap enrollment certificates --request FILE [--tqsl-helper FILE] [--tqsl-directory DIR]`.
