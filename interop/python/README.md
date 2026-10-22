@@ -134,8 +134,11 @@ To validate the machine error envelope against its JSON Schema, install the
 test dependencies and run `python3 scripts/check-machine-interface.py`.
 `python3 scripts/check-installed-python-consumer.py` additionally builds and
 installs a wheel, changes to a temporary directory outside the checkout, and
-tests content signing/verification plus one-way challenge authentication and
-replay rejection with the installed CLI.
+tests content, PixelQSO, one-way and mutual challenges, endorsements, replay
+and wrong-session rejection, and proof/key publication through an isolated
+keyserver. Pass `--bundle ARCHIVE --target TARGET` to exercise the CLI and
+keyserver extracted from a desktop archive rather than binaries built from the
+checkout.
 
 The suite starts a temporary local ARAP keyserver and checks proof/key publish
 and fetch through the public Python methods, including the stable `not_found`

@@ -295,6 +295,9 @@ jobs:
           ${{ matrix.python-command }} scripts/check-packaged-tqsl-helper.py \
             "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip" \
             "${{ matrix.target }}"
+          ${{ matrix.python-command }} scripts/check-installed-python-consumer.py \
+            --bundle "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip" \
+            --target "${{ matrix.target }}"
       - name: Launch native Tk desktop and adjacent CLI
         shell: bash
         run: ${{ matrix.python-command }} scripts/check-desktop-ui.py --bundle "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip"
