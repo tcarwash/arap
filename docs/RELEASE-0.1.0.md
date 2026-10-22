@@ -190,6 +190,16 @@ certificate/policy gates below.
   its runtime dependencies, checks the extracted helper, runs the synthetic
   enrollment flow using the extracted helper, and launches the desktop bundle.
   Hosted results remain unobserved.
+- Local validation on 2026-10-22 passed `go test -race ./...`, all seven CI
+  parser fuzz targets, `make vectors`, `make cddl`, the 11 Python client
+  integration tests, and the installed-wheel consumer against the extracted
+  Linux amd64 bundle. The consumer covered content, PixelQSO, one-way/mutual
+  challenges, endorsements, reference publication and replay/session rejection.
+  The Compose smoke passed authenticated publication/resolution, anonymous
+  write rejection and named-volume restart persistence. `govulncheck` found no
+  reachable vulnerabilities and reported one advisory only in an unreachable
+  required module. These are local Linux results; hosted native targets and
+  live LoTW/certificate evidence remain open.
 - Desktop archives require Python/Tk. The native enrollment matrix builds the
   pinned TQSL helper and runtime resources for Linux amd64/arm64, macOS
   amd64/arm64 and Windows amd64. Extracted-helper synthetic enrollment and

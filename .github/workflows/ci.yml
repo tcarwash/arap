@@ -268,7 +268,7 @@ jobs:
           helper_dir="$PWD/.build/tqsl-helper"
           mkdir -p "$helper_dir"
           if [[ "${{ matrix.runner-os }}" == darwin ]]; then
-            export CMAKE_PREFIX_PATH="$(brew --prefix openssl@3)"
+            export CMAKE_PREFIX_PATH="$(brew --prefix openssl@3):$(brew --prefix expat)"
           elif [[ "${{ matrix.runner-os }}" == windows ]]; then
             export CMAKE_TOOLCHAIN_FILE="$(cygpath -m "$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake")"
             export VCPKG_TARGET_TRIPLET=x64-windows-static
@@ -295,9 +295,15 @@ jobs:
           ${{ matrix.python-command }} scripts/check-packaged-tqsl-helper.py \
             "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip" \
             "${{ matrix.target }}"
-          ${{ matrix.python-command }} scripts/check-installed-python-consumer.py \
-            --bundle "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip" \
-            --target "${{ matrix.target }}"
+          if [[ "${{ matrix.runner-os }}" == linux ]]; then
+            python3 scripts/check-installed-python-consumer.py \
+              --bundle "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip" \
+              --target "${{ matrix.target }}"
+          else
+            ${{ matrix.python-command }} scripts/check-installed-python-consumer.py \
+              --bundle "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip" \
+              --target "${{ matrix.target }}"
+          fi
       - name: Launch native Tk desktop and adjacent CLI
         shell: bash
         run: ${{ matrix.python-command }} scripts/check-desktop-ui.py --bundle "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip"
