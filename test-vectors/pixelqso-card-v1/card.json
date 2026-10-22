@@ -1,0 +1,17 @@
+{
+  "format": "pixel-qso-card",
+  "version": 1,
+  "callsign": "AG7SU",
+  "grid": "CN85",
+  "card_id": 12,
+  "width": 2,
+  "height": 2,
+  "palette": [[0, 0, 0], [15, 15, 15], [0, 0, 15], [0, 15, 15], [0, 15, 0], [15, 15, 0], [15, 0, 0], [15, 0, 15]],
+  "pixels": [4, 3, 2, 1],
+  "animation": {
+    "first_card_id": 11,
+    "first_digest": "17dac0adfef514a6"
+  },
+  "base_pixels": [0, 0, 0, 0],
+  "stamp_layers": []
+}

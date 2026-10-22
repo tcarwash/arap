@@ -7,6 +7,8 @@
 
 > **Design goal:** Reuse existing cryptographic formats for verifiable signed amateur-radio material, including PixelQSO cards, without requiring a particular modem, waveform, online service, or live challenge-response session.
 
+> **Implementation note:** This overview is conceptual and is not the wire-format authority. The implemented content-signature and challenge-response v1 schemas are [ARAP-profile-v1.cddl](ARAP-profile-v1.cddl) and [ARAP-challenge-v1.cddl](ARAP-challenge-v1.cddl). They freeze encoding details for this prototype; that does not make ARAP an adopted or independently reviewed standard.
+
 ## 1. Scope and principles
 
 ARAP is a small application profile over established standards. It defines how an amateur-radio callsign identity, signed content, optional interactive authentication challenges, and abbreviated references to independently verifiable proofs fit together. It **does not** define new cryptography, an RF waveform, a certificate authority, or a generalized authentication framework.
@@ -32,6 +34,7 @@ ARAP targets accidental modifications, impersonation without private-key possess
 ## 2. Reused standards
 
 - **COSE_Sign1** from RFC 9052, with algorithms and identifiers from RFC 9053. Implementations MUST use standard COSE signature input construction, not directly sign their own JSON strings.
+- **Fully specified algorithms** from RFC 9864, which updates RFC 9053. The native Ed25519 profile uses COSE algorithm `Ed25519` (`-19`); the older polymorphic `EdDSA` (`-8`) identifier is deprecated and is not the proposed native-profile identifier.
 - **CBOR** per RFC 8949. Use deterministic encoding as defined there wherever the profile serializes its own CBOR maps; the exact signed bytes in the COSE payload are authoritative.
 - **X.509 certificate references** following RFC 9360 when X.509 identity material is used.
 - **SHA-256** for object digests and content addressing.
@@ -49,27 +52,26 @@ An ARAP proof is one COSE_Sign1 object whose signed payload is a CBOR map. Conce
 | Field | Meaning |
 |---|---|
 | `profile` | Literal `ARAP` |
-| `version` | Integer `1` (this draft's wire-format proposal) |
-| `purpose` | `content-signature`, `challenge-response`, or `key-endorsement` |
+| `version` | Integer `1` (implemented prototype profile) |
+| `purpose` | `content-signature`; challenge responses use the separate challenge-response schema; endorsements are a future extension |
 | `signer` | Normalized callsign claimed by the signing key |
 | `created` | UTC Unix timestamp in seconds |
-| `not_after` | Optional UTC Unix timestamp in seconds, required for challenge responses |
+| `not_after` | Optional content expiry; challenge response expiry is a required request-bound claim in its separate schema |
 | `subject` | Purpose-specific structure, detailed below |
 
-**Important:** The human-readable field names in this section define semantics, **not** frozen CBOR integer labels. Before declaring protocol version 1 interoperable, an implementation must freeze field labels, types, signing headers, and byte-level golden vectors. Do not advertise cross-implementation v1 compatibility before that is done.
+The readable names above describe semantics. The content v1 CBOR integer labels, types, required/optional fields, and protected COSE headers are defined by `ARAP-profile-v1.cddl`; the challenge request and response have their own labels in `ARAP-challenge-v1.cddl`. The profile uses RFC 8949 core deterministic encoding, tagged COSE_Sign1, embedded payload, empty external AAD, Ed25519 (`-19`), content type `application/vnd.arap.proof+cbor`, and a full SHA-256 fingerprint of DER SubjectPublicKeyInfo in `kid`. Use the CDDL and checked-in vectors for implementation details; do not infer a frozen wire representation from the conceptual table alone.
 
 CBOR and COSE format constraints:
 
 - Use a single COSE_Sign1 signature. The protected header MUST identify the algorithm and MUST contain a profile-specific content-type or equivalent unambiguous application marker.
-- The signer key identity MUST be unambiguously bound to the verified key. The `kid` header MAY be a full SHA-256 digest of the DER SubjectPublicKeyInfo; a truncated key identifier MUST NOT determine trust by itself.
+- The signer key identity MUST be unambiguously bound to the verified key. The v1 `kid` is the full SHA-256 digest of DER SubjectPublicKeyInfo; it identifies a key but does not determine trust by itself.
 - The signature covers the entire CBOR payload. The proof's signed payload, protected headers, and attached identity evidence must be interpreted according to COSE processing rules.
-- Verification MUST reject unknown critical COSE headers, unsupported algorithms, mismatched profile/version/purpose, malformed values, and ambiguous encodings.
-- Unrecognized noncritical payload fields MAY be ignored only if their semantics cannot change the security decision; critical extensions require a versioned rule.
+- The implemented v1 verifier rejects headers outside its exact protected-header set, unsupported algorithms, unknown payload labels, mismatched profile/version/purpose, malformed values, and non-deterministic encodings. Extensions require an explicitly versioned profile rule.
 - There is **no encryption** in ARAP.
 
 ### 3.2 Callsign strings
 
-For comparisons, a callsign is converted to ASCII uppercase and surrounding whitespace removed. Internal spaces and control characters are invalid. Allowed syntactic forms and portable suffixes require a separately published grammar; v0.1 implementations SHOULD preserve the original displayed callsign and SHOULD avoid treating variations such as `AG7SU`, `AG7SU/P`, and `AG7SU/7` as interchangeable without an explicit binding rule.
+For comparisons, a callsign is converted to ASCII uppercase and surrounding ASCII spaces are removed. The implemented v1 grammar permits 3–20 ASCII bytes containing at least one letter and one digit, with only single internal slashes; leading, trailing or repeated slashes are invalid. Variants such as `AG7SU`, `AG7SU/P`, and `AG7SU/7` remain distinct identities unless an explicit binding rule is added.
 
 A signature only establishes control of the signing key. Authorization to claim a callsign is a separate identity-validation result.
 
@@ -82,27 +84,27 @@ Conceptual subject:
 ```yaml
 kind: content-signature
 media_type: application/vnd.pixelqso.card+cbor  # example; not yet registered
-canonicalization: pixelqso-card-v1                # example app-defined identifier
+canonicalization: identity-v1                     # hash the supplied canonical CBOR bytes exactly
 content_digest_algorithm: sha-256
 content_digest: <32 raw bytes>
 content_size: <integer length in bytes>
 content_id: <optional app-local object identifier>
-context: <optional domain/app identifier, e.g. "pixelqso/card/v1">
+context: <required domain/app identifier, e.g. "pixelqso/card/v1">
 ```
 
 Rules:
 
 1. Every content type MUST define the exact bytes hashed. Prefer hashing the stored/transmitted original bytes directly; if semantic canonicalization is required, the application MUST publish a deterministic algorithm and version.
 2. Compute `content_digest = SHA256(content_bytes)`; include the original byte length. Verifiers MUST recompute both against the presented content.
-3. The signed subject MUST bind a type or domain (`media_type` and/or `context`) to stop one file's digest from being confused for a different kind of signed statement.
+3. The signed subject MUST bind a type and domain (`media_type` and `context`) to stop one file's digest from being confused for a different kind of signed statement.
 4. Signing does not require that the content itself be uploaded, that its author be online, or that the recipient be named.
 5. Detached content and detached signatures are allowed. A receiver MUST NOT show a card as **verified** until it has the correct card bytes and a valid proof bound to them.
 6. Publication may happen later. A receiving application MAY store a card as **signature pending** while awaiting its signature or certificate.
 7. Re-signing an unchanged card makes a new proof; editing a single pixel produces a different digest and invalidates the old signature for the altered content.
 
-### 4.1 PixelQSO profile (proposed)
+### 4.1 PixelQSO profile
 
-PixelQSO SHOULD define one portable serialized card representation with palette, dimensions, pixel indices, and any metadata that is intended to be authenticated. Prefer a deterministic binary serialization (`pixelqso-card-v1`) rather than hashing screenshots or PNG encodings, because images can encode identical visible pixels with different file bytes.
+The ARAP adapter defines the portable signed representation as `PixelQSO-card-v1` deterministic CBOR over supported saved-card fields (palette, dimensions, pixel indices, card metadata and animation link), rather than screenshots or PNG encodings. The ARAP proof uses `identity-v1` because it hashes those already-canonical CBOR bytes exactly; `pixelqso-card-v1` names the content format, not the COSE payload's canonicalization method. See [PixelQSO-card-v1.cddl](PixelQSO-card-v1.cddl) and [the integration guide](../docs/PIXELQSO-INTEGRATION.md). The ARAP CLI and desktop can sign and verify it; PixelQSO's editor now attaches detached proof/reference sidecars, displays pending/verified status and publishes/resolves references without changing the radio card format.
 
 If PixelQSO wants some mutable metadata (received-at timestamp, local deck notes, display name), it MUST explicitly keep it **outside** the signed bytes. Signature verification reports exactly what was signed, not all UI fields.
 
@@ -145,19 +147,25 @@ A `key-endorsement` is a signed statement containing at least the issuer callsig
 
 Clients MUST NOT interpret a self-issued endorsement as independent callsign identity proof. Clients MUST limit trust delegation by explicit policy, path depth, and accepted issuers. A LoTW/TQSL credential MAY endorse an ARAP-native key only when permitted by the credential's use policy and verified under an explicitly documented trust rule.
 
-This purpose is **experimental** in draft v0.1; native direct signing works without endorsements.
+The initial Go implementation and payload schema are in `endorsement/` and
+`ARAP-key-endorsement-v1.cddl`. Endorsement proofs use the generic Ed25519
+COSE envelope, an application-supplied root, strict purpose attenuation and a
+bounded delegation depth. This profile remains experimental until independent
+vectors, CLI integration, broader negative cases, and external review are done.
 
 ## 7. Identity and trust
 
 Support two independent key providers:
 
-**Native identity.** Ed25519 using COSE algorithm `EdDSA`, with key fingerprints and a configurable trust store. An unknown native key can produce a mathematically valid signature but is not automatically a callsign-verified identity.
+**Software-key identity.** Ed25519 using the fully specified COSE algorithm `Ed25519` (`-19`, RFC 9864), with key fingerprints and a configurable local trust store. An unknown key can produce a mathematically valid signature but is not automatically a callsign-verified identity. Verification requires the actual public key, not just its fingerprint. Local callsign/key/purpose authorization is implemented; LoTW-backed identity binding is not.
 
-**TQSL-backed identity.** Reuse the station's existing TQSL/LoTW certificate and private key only if appropriate use is technically supported and consistent with applicable certificate policy. An initial prototype MAY import a user-exported PKCS#12 key; avoid unnecessary persistent copies of private keys. Key types, COSE algorithm mapping, certificate Key Usage/EKU, callsign extraction, trust anchors, and revocation/status checking MUST be explicitly validated. Do not treat an X.509 chain as trusted merely because signature verification succeeds.
+**TQSL identity research.** TQSL's current `tqsl_signDataBlock` implementation hardcodes RSA-SHA1, corresponding to deprecated COSE RS1; ARAP MUST NOT use it to sign proofs. TQSL may be considered as a separate certificate identity-evidence source only after permitted use, certificate Key Usage/EKU, callsign extraction, trust anchors and revocation/status policy are established. Do not imply that TQSL authenticated an ARAP-native key unless a separate, valid binding mechanism is specified and verified.
 
-TQSL-specific trust is **provisional** until technical and policy research is completed. The project MUST NOT claim that ARRL endorses this use, that TQSL allows arbitrary-message signing through its public API, or that LoTW provides a public certificate lookup/revocation service without verification.
+TQSL-specific trust is **provisional** until algorithm and policy research is completed. The project MUST NOT claim that ARRL endorses this use or that LoTW provides a public certificate lookup/revocation service without verification. The documented arbitrary-data-block API is not by itself evidence of permission for this use or standard COSE compatibility.
 
 A verifier MUST surface separate results for `cryptographic_signature`, `content_integrity`, `callsign_identity`, `challenge_freshness` (if applicable), and `overall_policy`.
+
+The signed `created` value is a signer assertion, not a trusted timestamp. A verifier MUST NOT use it alone to infer that a certificate or callsign authorization was valid at signing time. Signature mathematics and current identity/expiry policy are separate decisions. Exact time and result aggregation rules remain implementation-profile freeze requirements.
 
 ## 8. Direct and reference transports
 
@@ -171,7 +179,7 @@ Send the exact signed COSE bytes, and include the necessary certificate/key mate
 
 Let `P` be the exact serialized COSE_Sign1 bytes of a completed proof. Compute `D = SHA256(P)`.
 
-The v0.1 *example* short token is the first **80 bits** of `D`, encoded using RFC 4648 uppercase, unpadded Base32 (16 symbols), with a human prefix `AR1` outside the token. Example presentation: `AR1 ABCD EFGH IJKL MNOP` (illustrative, not a computed value).
+The implemented reference token is the first **80 bits** of `D`, encoded using RFC 4648 uppercase, unpadded Base32 (16 symbols), with a human prefix `AR1` outside the token. Grouping with spaces or hyphens is presentation-only; lookup uses the exact sixteen Base32 symbols.
 
 The token is a **locator**, not an independent verifier. An attacker may publish a colliding prefix, so the resolver MUST return a candidate set or signal ambiguity, and the client MUST hash each returned candidate, match the advertised prefix, then check the complete signature and subject against local expectations. Prefix matching alone MUST NEVER result in a verified state.
 
@@ -179,7 +187,7 @@ A transcription checksum is optional in this draft and MUST be explicitly versio
 
 ### 8.3 Publication and resolution
 
-An operator MAY upload P to any HTTPS object store or resolver. Use the full hex SHA-256 digest as the immutable storage key. Suggested minimal paths (non-normative):
+An operator MAY upload P to any HTTPS object store or resolver. Use the full hex SHA-256 digest as the immutable storage key. The optional ARAP keyserver implements these paths:
 
 ```http
 PUT /v1/proofs/{sha256-hex}
@@ -216,6 +224,8 @@ A content proof is durable and can be replayed with the *same unchanged content*
 ## 10. Verification algorithm
 
 The following is conceptual. Detailed COSE processing follows RFC 9052:
+
+The `key-endorsement` branch describes a possible future profile only. Current v1 implementations support content signatures and the separate challenge-response schema; they reject endorsements.
 
 ```text
 verify(proof_bytes, optional_content_bytes, optional_outstanding_challenge, trust_policy):
@@ -254,34 +264,31 @@ ARAP uses publicly documented message formats and digital signatures, not encryp
 
 ## 12. Interoperability and versioning
 
-ARAP v0.1 is a **draft profile**. Interoperable v1 requires:
+ARAP v0.1 is a **draft profile**, and the v1 schemas remain experimental. Interoperable standardization still requires:
 
-- Freeze integer CBOR field labels and exact data types, required/optional fields, protected COSE headers, and acceptable signature algorithms.
-- Publish byte-identical canonical test vectors for Ed25519 and at least one TQSL-relevant algorithm after inspection.
-- Publish challenge-response and PixelQSO-style content-signing vectors, negative cases, and short-reference encodings.
+- Independently review and maintain the integer CBOR field labels, exact data types, required/optional fields, protected COSE headers, and allowlisted signature algorithms already specified for the prototype.
+- Publish byte-identical deterministic native Ed25519 test vectors. Any TQSL-backed profile requires its own inspected algorithm, trust policy and vectors; it does not gate native content-signing interoperability.
+- Publish vectors and negative cases for each implemented purpose and application profile, plus short-reference encodings if supported. A native content-only implementation MUST declare that scope and reject unsupported purposes; challenge-response and real PixelQSO compatibility require their own vectors before being claimed.
 - Have independent implementations (ideally Go and Python) verify the same test vectors.
 - Document OPV adapter mappings as separate integration specifications; do not redefine core proof semantics to follow an RF transport.
 
 Changes to signed byte representations, hash reference format, or security policy require an explicit version change. Profile identifiers MUST be signed as part of the proof's cryptographic context.
 
-## 13. Open questions before v1 freeze
+## 13. Open questions before standardization
 
-1. Exact CBOR key numbers, timestamp representation, payload map layout, and COSE `content-type` value.
-2. Whether PixelQSO's existing serialized card format can be treated as canonical or requires a new deterministic representation.
-3. How TQSL certificate subject/callsign and certificate policies are encoded and verified; accepted algorithms and trust anchor distribution.
-4. Whether TQSL/LoTW operators permit or support arbitrary-purpose signing with current credentials; acceptable key-export workflow.
-5. How certificate status/revocation works offline, and how to represent `status unknown` honestly.
-6. Optional short-reference checksum; lookup namespace and query abuse controls.
-7. Callsign suffix/portable identifier normalization and key authorization scope.
-8. Resolver discovery convention without centralizing authorization.
-9. Whether endorsements are needed for v1 or should remain a separate future extension.
-10. Mapping to OPV's concrete messages once those are stabilized and tested.
+1. Independent review and broader conformance vectors for the implemented COSE/CBOR profiles.
+2. TQSL certificate subject/callsign binding, certificate policies, trust anchors, status/revocation evidence, and permitted ARAP use.
+3. Whether an optional transcription checksum is useful and, if so, its versioned format.
+4. Resolver discovery and federation conventions without centralizing authorization.
+5. Whether endorsements are needed and, if so, their delegation limits and separate profile.
+6. Mapping to OPV's concrete messages once those are stabilized and tested.
 
 ## 14. References
 
 - RFC 8949, *Concise Binary Object Representation (CBOR)* — https://www.rfc-editor.org/rfc/rfc8949
 - RFC 9052, *CBOR Object Signing and Encryption (COSE): Structures and Process* — https://www.rfc-editor.org/rfc/rfc9052
 - RFC 9053, *COSE: Initial Algorithms* — https://www.rfc-editor.org/rfc/rfc9053
+- RFC 9864, *Fully-Specified Algorithms for JOSE and COSE* — https://www.rfc-editor.org/rfc/rfc9864
 - RFC 9360, *COSE X.509* — https://www.rfc-editor.org/rfc/rfc9360
 - RFC 4648, *The Base16, Base32, and Base64 Data Encodings* — https://www.rfc-editor.org/rfc/rfc4648
 - TrustedQSL source project — https://sourceforge.net/projects/trustedqsl/

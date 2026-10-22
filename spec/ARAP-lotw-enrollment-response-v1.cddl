@@ -1,0 +1,17 @@
+; Experimental LoTW enrollment response, version 1.
+; This schema defines structure only. It does not make the legacy TQSL
+; RSA/SHA-1 signature acceptable; verification is policy-gated in code.
+
+enrollment-response = {
+  1: bstr .size (1..4096),     ; exact canonical enrollment challenge bytes
+  2: [1*8 bstr],               ; leaf-first DER chain, max 8 entries / 64 KiB total
+  3: bstr .size 32,            ; raw Ed25519 public key
+  4: bstr .size (1..1024),     ; TQSL data-block RSA/SHA-1 signature
+  5: bstr .size 64,            ; Ed25519 signature over exact challenge bytes
+}
+
+; The embedded challenge MUST validate under ARAP-lotw-enrollment-v1.cddl or
+; ARAP-lotw-enrollment-v2.cddl according to its version field.
+; Acceptance additionally requires trusted chain, callsign binding, current
+; status evidence, audience/freshness checks, both signatures, and one-time
+; challenge consumption.

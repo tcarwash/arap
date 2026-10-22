@@ -1,0 +1,228 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go:
+    name: Go ${{ matrix.go }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go: ['1.26.10', stable]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: ${{ matrix.go }}
+          cache-dependency-path: go.sum
+      - run: go test ./...
+      - run: go vet ./...
+      - run: go build ./cmd/arap ./cmd/arap-keyserver
+      - name: Run public application examples
+        run: |
+          go run ./examples/content-proof
+          go run ./examples/mutual-auth
+
+  race:
+    name: Go race checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          cache-dependency-path: go.sum
+      - run: go test -race ./...
+      - name: Fuzz content proof parser
+        run: go test ./protocol -run='^$' -fuzz=FuzzVerifyContentProofParser -fuzztime=10s
+      - name: Fuzz challenge request parser
+        run: go test ./challenge -run='^$' -fuzz=FuzzDecodeChallengeRequest -fuzztime=10s
+      - name: Fuzz challenge response verifier
+        run: go test ./challenge -run='^$' -fuzz=FuzzVerifyChallengeResponse -fuzztime=10s
+      - name: Fuzz public-key and certificate parser
+        run: go test ./identity -run='^$' -fuzz=FuzzParsePublicKey -fuzztime=10s
+      - name: Fuzz resolver reference parser
+        run: go test ./reference -run='^$' -fuzz=FuzzParseReference -fuzztime=10s
+      - name: Fuzz resolver lookup parser
+        run: go test ./reference -run='^$' -fuzz=FuzzParseLookup -fuzztime=10s
+      - name: Fuzz PixelQSO card parser
+        run: go test ./adapters/pixelqso -run='^$' -fuzz=FuzzCanonicalizeJSON -fuzztime=10s
+
+  security:
+    name: Go vulnerability scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: 1.26.10
+          cache-dependency-path: go.sum
+      - name: Scan reachable Go vulnerabilities
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
+
+  interoperability:
+    name: Python interoperability vectors
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          cache-dependency-path: go.sum
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r interop/python/requirements.txt
+      - run: python scripts/check-machine-interface.py
+      - run: PYTHONPATH=interop/python python -m unittest interop.python.test_client -v
+      - run: python scripts/check-installed-python-consumer.py
+      - run: scripts/check-vectors.sh
+      - run: go test ./protocol ./challenge
+      - name: Run offline content and PixelQSO examples
+        run: make signing-demo
+
+  native-tqsl-enrollment:
+    name: Synthetic TQSL enrollment on Linux
+    runs-on: ubuntu-latest
+    env:
+      TRUSTEDQSL_SOURCE_DIR: ${{ runner.temp }}/trustedqsl
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - name: Install TQSLLIB build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake libssl-dev libsqlite3-dev libexpat1-dev zlib1g-dev
+      - name: Check out pinned TrustedQSL source
+        run: |
+          git clone --filter=blob:none --no-checkout https://git.code.sf.net/p/trustedqsl/tqsl "$TRUSTEDQSL_SOURCE_DIR"
+          git -C "$TRUSTEDQSL_SOURCE_DIR" fetch --depth 1 origin 1916fc14a8cfc7f287742ae5a34aa986353d9df7
+          git -C "$TRUSTEDQSL_SOURCE_DIR" checkout --detach 1916fc14a8cfc7f287742ae5a34aa986353d9df7
+      - name: Run isolated synthetic enrollment and signing demo
+        run: make enrollment-demo
+
+  cddl:
+    name: CDDL schema and vector validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install pinned Rust compiler
+        run: rustup toolchain install 1.88.0 --profile minimal
+      - name: Install pinned CDDL validator
+        run: cargo +1.88.0 install cddl --version 0.10.7 --locked
+      - run: make cddl
+
+  desktop-and-container:
+    name: Desktop and keyserver build checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: python -m py_compile desktop/arap_desktop.py
+      - run: mkdir -p bin && go build -o bin/arap ./cmd/arap && go build -o bin/arap-keyserver ./cmd/arap-keyserver
+      - run: sudo apt-get update && sudo apt-get install -y python3-tk xvfb
+      - run: xvfb-run -a /usr/bin/python3 scripts/check-desktop-ui.py
+      - run: docker compose config -q
+        env:
+          ARAP_UPLOAD_TOKEN: ci-only-validation-token
+      - run: docker compose -f compose.yaml -f compose.haproxy.yaml config -q
+        env:
+          ARAP_UPLOAD_TOKEN: ci-only-validation-token
+      - run: python3 scripts/check-keyserver-compose.py
+
+  desktop-bundles:
+    name: Desktop bundle ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [linux-amd64, linux-arm64, darwin-amd64, darwin-arm64, windows-amd64]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - if: matrix.target == 'linux-amd64'
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake libssl-dev libsqlite3-dev libexpat1-dev zlib1g-dev
+      - if: matrix.target == 'linux-amd64'
+        name: Check out pinned TrustedQSL source
+        run: |
+          git clone --filter=blob:none --no-checkout https://git.code.sf.net/p/trustedqsl/tqsl "$TRUSTEDQSL_SOURCE_DIR"
+          git -C "$TRUSTEDQSL_SOURCE_DIR" fetch --depth 1 origin 1916fc14a8cfc7f287742ae5a34aa986353d9df7
+          git -C "$TRUSTEDQSL_SOURCE_DIR" checkout --detach 1916fc14a8cfc7f287742ae5a34aa986353d9df7
+        env:
+          TRUSTEDQSL_SOURCE_DIR: ${{ runner.temp }}/trustedqsl
+      - run: scripts/package-desktop.sh "${{ matrix.target }}"
+        env:
+          ARAP_VERSION: ${{ github.sha }}
+          TRUSTEDQSL_SOURCE_DIR: ${{ runner.temp }}/trustedqsl
+      - run: python3 scripts/check-desktop-bundle.py "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip" "${{ matrix.target }}"
+      - if: matrix.target == 'linux-amd64'
+        run: python3 scripts/check-packaged-tqsl-helper.py "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip"
+        env:
+          TRUSTEDQSL_SOURCE_DIR: ${{ runner.temp }}/trustedqsl
+      - if: matrix.target == 'linux-amd64'
+        run: sudo apt-get update && sudo apt-get install -y python3-tk xvfb
+      - if: matrix.target == 'linux-amd64'
+        run: xvfb-run -a /usr/bin/python3 scripts/check-desktop-ui.py --bundle "dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: arap-desktop-${{ matrix.target }}
+          path: dist/arap-desktop-${{ matrix.target }}-${{ github.sha }}.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  native-desktop-runtime:
+    name: Native desktop runtime ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            platform: darwin
+            python: '3.12'
+            python-command: python3
+          - os: windows-latest
+            platform: windows
+            python: '3.12'
+            python-command: python
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Build native desktop bundle
+        shell: bash
+        run: scripts/package-desktop.sh "${{ matrix.platform }}-$(go env GOARCH)"
+        env:
+          ARAP_VERSION: ${{ github.sha }}
+      - name: Launch native Tk desktop and adjacent CLI
+        shell: bash
+        run: ${{ matrix.python-command }} scripts/check-desktop-ui.py --bundle "dist/arap-desktop-${{ matrix.platform }}-$(go env GOARCH)-${{ github.sha }}.zip"

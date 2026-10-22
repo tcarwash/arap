@@ -1,0 +1,8 @@
+/bin/
+/dist/
+/arap-data/
+__pycache__/
+*.py[cod]
+.venv/
+interop/python/build/
+interop/python/*.egg-info/

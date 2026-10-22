@@ -1,0 +1,17 @@
+; Portable container for an ordered root-to-subject chain of signed
+; key-endorsement proofs. The container transports statements but makes no
+; trust assertion; receivers must apply their own anchors and policy.
+
+key-endorsement-chain = {
+  1: "ARAP-key-endorsement-chain",
+  2: 1,
+  3: [1*8 bstr .size (1..65536)]
+}
+
+; Additional profile rules:
+; - The complete deterministic-CBOR container MUST be at most 524288 bytes.
+; - Links are ordered from the application trust anchor toward the target key.
+; - Each bstr contains one key-endorsement-proof as defined in
+;   ARAP-key-endorsement-v1.cddl.
+; - Decoding does not authenticate links. Verify each signature, purpose,
+;   validity interval, delegation bound and target against local policy.

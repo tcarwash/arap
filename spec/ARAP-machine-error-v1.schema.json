@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tcarwash/arap/blob/main/spec/ARAP-machine-error-v1.schema.json",
+  "title": "ARAP machine interface error envelope v1",
+  "description": "Error object emitted by the ARAP CLI in ARAP_MACHINE=1 mode and returned by ArapError.as_dict(). The process exit status is carried by the operating system, not this JSON object.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "ok", "error"],
+  "properties": {
+    "protocol_version": {"const": 1},
+    "ok": {"const": false},
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "rejected",
+            "incomplete",
+            "operation_error",
+            "invalid_input",
+            "not_found",
+            "ambiguous",
+            "unavailable",
+            "invalid_response",
+            "canceled",
+            "timeout"
+          ]
+        },
+        "message": {"type": "string"}
+      }
+    }
+  }
+}

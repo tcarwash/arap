@@ -1,0 +1,68 @@
+; Implemented ARAP content-signature profile, wire version 1.
+; RFC 8949 Core Deterministic Encoding is required for every profile map.
+; COSE_Sign1 uses tag 18 and an embedded signed payload.
+; Implementations MUST limit the complete encoded COSE proof to 65,536 bytes.
+;
+; This profile currently allows only fully specified Ed25519 (COSE alg -19).
+; TQSL-backed algorithms are excluded because its inspected signer hardcodes
+; deprecated RSA-SHA1/RS1. Challenge responses use the separate
+; ARAP-challenge-v1.cddl profile. Key endorsements use the separate
+; ARAP-key-endorsement-v1.cddl profile.
+
+arap-proof = #6.18(cose-sign1)
+cose-sign1 = [
+  protected: bstr .cbor protected-header,
+  unprotected: {},
+  payload: bstr .cbor content-payload,
+  signature: bstr .size 64
+]
+
+protected-header = {
+  1: -19,                                      ; alg: Ed25519 (RFC 9864)
+  3: "application/vnd.arap.proof+cbor",       ; content type
+  4: bstr .size 32                             ; SHA-256(DER SubjectPublicKeyInfo)
+}
+
+content-payload = {
+  1: "ARAP",
+  2: 1,
+  3: "content-signature",
+  4: callsign,
+  5: uint,                                     ; Unix seconds, self-asserted
+  ? 6: uint,                                   ; not_after, Unix seconds
+  7: content-subject
+}
+
+content-subject = {
+  1: media-type,
+  2: "identity-v1",
+  3: "sha-256",
+  4: bstr .size 32,
+  5: uint,                                     ; exact content byte length
+  ? 6: content-id,
+  7: context
+}
+
+callsign = tstr .size (3..20)
+media-type = tstr .size (1..128)
+content-id = tstr .size (1..256)
+context = tstr .size (1..128)
+
+; Additional profile rules:
+; - Callsigns are uppercase ASCII letters, digits and single internal slashes;
+;   require at least one letter and one digit; no leading/trailing slash.
+; - media-type, content-id and context are valid UTF-8.
+; - `not_after`, when present, is later than `created`; reject at now >= not_after.
+; - Apply expiry policy only after verifying the signature; an expired but
+;   correctly signed proof remains cryptographically valid even if its content
+;   is not read. A modified expiry claim is an invalid signature, not expiry.
+; - Reject content proofs whose `created` is more than 300 seconds ahead of
+;   verifier time. This bounds clock skew; `created` is not a trusted timestamp.
+; - Hash exactly the original content bytes; include their exact byte length.
+; - No unknown payload/header labels, indefinite-length items, floats,
+;   trailing data, duplicate map keys or tags besides COSE_Sign1 tag 18.
+; - Signature input is the COSE Signature1 array with empty external AAD.
+; - A verifier MUST NOT present payload claims as authenticated until the
+;   COSE signature has verified. For invalid or unchecked proofs, omit claims
+;   from authenticated verification results; use an explicitly untrusted
+;   inspection operation to display parsed-but-unauthenticated payload data.

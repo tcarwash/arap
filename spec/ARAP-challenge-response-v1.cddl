@@ -1,0 +1,43 @@
+; ARAP challenge-response COSE_Sign1 envelope, wire version 1.
+; The payload schema is also defined in ARAP-challenge-v1.cddl. This complete
+; envelope is kept separate so independent validators can select its root.
+
+challenge-response-proof = #6.18(challenge-response-cose-sign1)
+challenge-response-cose-sign1 = [
+  protected: bstr .cbor challenge-response-protected-header,
+  unprotected: {},
+  payload: bstr .cbor challenge-response-payload,
+  signature: bstr .size 64
+]
+
+challenge-response-protected-header = {
+  1: -19,                                      ; alg: Ed25519
+  3: "application/vnd.arap.proof+cbor",       ; content type
+  4: bstr .size 32                             ; SHA-256(DER SubjectPublicKeyInfo)
+}
+
+challenge-response-payload = {
+  1: "ARAP",
+  2: 1,
+  3: "challenge-response",
+  4: callsign,                                 ; responder
+  5: uint,                                     ; response creation time
+  6: uint,                                     ; MUST equal request expiry
+  7: challenge-response-subject,
+}
+
+challenge-response-subject = {
+  1: bstr .size 32,                            ; SHA-256 of exact canonical request bytes
+  2: bstr .size 16,                            ; request nonce
+  3: callsign,                                 ; requester
+  4: callsign,                                 ; responder
+  5: tstr .size (1..64),                       ; requested authentication purpose
+  6: uint,                                     ; request expires_at
+  ? 7: bstr .size (1..128),                    ; exact session binding, if present in request
+}
+
+callsign = tstr .size (3..20)
+
+; Additional profile rules from ARAP-challenge-v1.cddl apply, including exact
+; request binding, freshness, trust policy, canonical CBOR and atomic replay
+; consumption. The complete encoded proof limit is 65,536 bytes.

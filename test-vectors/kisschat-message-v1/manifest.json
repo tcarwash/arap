@@ -1,0 +1,40 @@
+{
+  "profile": "KISSChat-message-v1",
+  "media_type": "application/vnd.kisschat.message+json",
+  "context": "kisschat/message-v1",
+  "canonicalization": "identity-v1",
+  "vectors": [
+    {
+      "name": "unicode-multiline-u32-boundary",
+      "message": {
+        "o": "0123456789abcdef0123456789abcdef",
+        "s": 4294967295,
+        "ts": 0,
+        "c": "#test",
+        "n": "É🙂",
+        "b": "line 1\nline 2 — café <ok>"
+      },
+      "signing_callsign": "AG7SU",
+      "canonical": "{\"body\":\"line 1\\nline 2 — café <ok>\",\"callsign\":\"AG7SU\",\"channel\":\"#test\",\"nick\":\"É🙂\",\"origin\":\"0123456789abcdef0123456789abcdef\",\"sequence\":4294967295,\"timestamp\":0,\"version\":1}"
+    },
+    {
+      "name": "empty-caption-image-u32-boundary",
+      "message": {
+        "o": "00000000000000000000000000000001",
+        "s": 1,
+        "ts": 4294967295,
+        "c": "#img",
+        "n": "AG7SU",
+        "b": "",
+        "image": {
+          "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "size": 8192,
+          "width": 160,
+          "height": 1
+        }
+      },
+      "signing_callsign": "AG7SU",
+      "canonical": "{\"body\":\"\",\"callsign\":\"AG7SU\",\"channel\":\"#img\",\"image\":{\"height\":1,\"media_type\":\"image/jpeg\",\"sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"size\":8192,\"width\":160},\"nick\":\"AG7SU\",\"origin\":\"00000000000000000000000000000001\",\"sequence\":1,\"timestamp\":4294967295,\"version\":1}"
+    }
+  ]
+}

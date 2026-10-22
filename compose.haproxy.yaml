@@ -1,0 +1,7 @@
+# Optional host-port publication for a reverse proxy running outside this
+# Compose network. Keep the default on loopback; override the address only when
+# the proxy is on another host and the Docker host firewall restricts access.
+services:
+  arap-keyserver:
+    ports:
+      - "${ARAP_PUBLISH_ADDRESS:-127.0.0.1}:${ARAP_PUBLISH_PORT:-8080}:8080"

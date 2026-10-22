@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "bindings": [
+    {
+      "callsign": "AG7SU",
+      "key_id_sha256": "a050837d85070582ccf7394b0988847cc312cb88259b894899f6f239cf1791a5",
+      "purposes": [
+        "content-signature"
+      ]
+    }
+  ]
+}

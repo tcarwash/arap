@@ -1,0 +1,11 @@
+{
+  "canonical_cbor_hex": "a90101026541473753550364434e3835040c05020602078883000000830f0f0f8300000f83000f0f83000f00830f0f00830f0000830f000f08840403020109a3010b024817dac0adfef514a6031901f4",
+  "canonical_sha256": "a61f0f5df47d86a37649804e27be96a28288451cb57d1b286c7d23cc1b756caf",
+  "canonical_size": 80,
+  "context": "pixelqso/card-v1",
+  "first_artwork_digest": "17dac0adfef514a6",
+  "first_canonical_sha256": "f122e2e7bbdc0553dc9a471599f9c5d64e400e9fd5ca045429ee03b2a590b8e4",
+  "first_canonical_size": 62,
+  "media_type": "application/vnd.pixelqso.card+cbor",
+  "profile": "PixelQSO-card-v1"
+}

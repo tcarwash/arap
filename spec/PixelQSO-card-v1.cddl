@@ -1,0 +1,20 @@
+; ARAP canonical content representation for PixelQSO saved-card JSON.
+; This is content bytes, not a COSE object. COSE_Sign1 signs these exact bytes.
+pixelqso-card-v1 = {
+  1: 1,                      ; adapter version
+  2: tstr,                   ; normalized uppercase callsign
+  3: tstr,                   ; uppercase ASCII grid, may be empty
+  4: 0..65535,                ; PixelQSO card ID
+  5: 1..255,                  ; width
+  6: 1..255,                  ; height
+  7: pixelqso-palette,        ; ordered RGB444 palette
+  8: [* (0..31)],             ; row-major palette indices; count = width * height
+  ? 9: {                      ; optional two-frame reference
+    1: 0..65535,              ; first card ID, different from this card ID
+    2: bstr .size 8,          ; first frame artwork digest
+    3: 100..10000             ; effective duration in milliseconds
+  }
+}
+
+rgb444 = [3*3 (0..15)]
+pixelqso-palette = [2*2 rgb444] / [8*8 rgb444] / [16*16 rgb444] / [32*32 rgb444]

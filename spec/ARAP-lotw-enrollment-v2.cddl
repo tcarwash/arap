@@ -1,0 +1,23 @@
+; Experimental LoTW enrollment challenge, version 2.
+; Version 1 remains challenge-response-only. Version 2 binds the verifier's
+; exact key-purpose policy into the bytes signed by the Callsign Certificate
+; key and the ARAP Ed25519 key. This schema does not make RSA/SHA-1 acceptable.
+
+enrollment-challenge-v2 = {
+  1: "ARAP-LoTW-enrollment",
+  2: 2,
+  3: "bind-ed25519-key",
+  4: tstr .size (1..256),       ; exact verifier audience
+  5: callsign,
+  6: bstr .size 32,             ; SHA-256(DER SubjectPublicKeyInfo)
+  7: bstr .size 32,             ; CSPRNG nonce
+  8: uint,                      ; issued_at
+  9: uint,                      ; expires_at, max 300 seconds after issued_at
+  10: [1*2 enrollment-purpose], ; explicit verifier-selected authority
+}
+
+enrollment-purpose = "challenge-response" / "content-signature"
+callsign = tstr .size (3..20)
+
+; Implementations require purposes to be unique and lexicographically ordered.
+; Existing version 1 challenges and bindings do not gain content authority.

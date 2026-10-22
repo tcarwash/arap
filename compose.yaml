@@ -1,0 +1,28 @@
+services:
+  arap-keyserver:
+    build: .
+    image: arap-keyserver:local
+    restart: unless-stopped
+    environment:
+      ARAP_LISTEN: ":8080"
+      ARAP_DATA_DIR: /data
+      ARAP_UPLOAD_TOKEN: ${ARAP_UPLOAD_TOKEN:?set ARAP_UPLOAD_TOKEN in the deployment environment}
+      ARAP_MAX_PROOF_OBJECTS: ${ARAP_MAX_PROOF_OBJECTS:-100000}
+      ARAP_MAX_KEY_OBJECTS: ${ARAP_MAX_KEY_OBJECTS:-10000}
+      ARAP_MAX_TOTAL_BYTES: ${ARAP_MAX_TOTAL_BYTES:-10737418240}
+      ARAP_MAX_UPLOADS_PER_MINUTE: ${ARAP_MAX_UPLOADS_PER_MINUTE:-600}
+      ARAP_RETENTION_DAYS: ${ARAP_RETENTION_DAYS:-0}
+    volumes:
+      - arap-keyserver-data:/data
+    expose:
+      - "8080"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid,nodev
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  arap-keyserver-data:

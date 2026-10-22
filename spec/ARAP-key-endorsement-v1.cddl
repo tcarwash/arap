@@ -1,0 +1,51 @@
+; ARAP key endorsement payload, wire version 1.
+; The payload is embedded in the existing tag-18 COSE_Sign1 envelope and is
+; signed using the ARAP Ed25519 profile.
+
+key-endorsement-proof = #6.18([
+  protected: bstr .cbor key-endorsement-protected,
+  unprotected: {},
+  payload: bstr .cbor key-endorsement-payload,
+  signature: bstr .size 64
+])
+
+key-endorsement-protected = {
+  1: -19,
+  3: "application/vnd.arap.proof+cbor",
+  4: bstr .size 32
+}
+
+key-endorsement-payload = {
+  1: "ARAP",
+  2: 1,
+  3: "key-endorsement",
+  4: callsign,                                 ; issuer
+  5: uint,                                     ; issued Unix seconds
+  6: uint,                                     ; expiry Unix seconds
+  7: endorsed-key,
+  8: 0..8                                       ; remaining delegation depth
+}
+
+endorsed-key = {
+  1: callsign,                                 ; subject callsign
+  2: bstr,                                     ; DER SubjectPublicKeyInfo, Ed25519
+  3: [+ endorsement-purpose]
+}
+
+endorsement-purpose = "content-signature" / "challenge-response" / "key-endorsement"
+callsign = tstr .size (3..20)
+
+; Additional profile rules:
+; - The subject key MUST parse as one Ed25519 SubjectPublicKeyInfo value.
+; - The issuer identity MUST match the signing COSE key and the preceding
+;   link's subject, or an application-configured trust anchor for the first link.
+; - Purpose lists MUST be sorted, unique and supported. Each link MUST be a
+;   subset of the authority delegated by its issuer.
+; - Each link MUST strictly reduce MaxDelegationDepth. Verification MUST cap
+;   the whole chain at eight links and reject repeated subject keys (cycles).
+; - Validity MUST be positive and no longer than one year; apply expiry and
+;   five-minute future-skew rules after verifying each signature.
+; - Only an application-configured anchor establishes trust. A self-signed or
+;   self-issued endorsement MUST NOT establish callsign identity.
+; - Verification MUST check the requested purpose and exact final subject key.
+;   Endorsements do not by themselves prove current LoTW certificate status.

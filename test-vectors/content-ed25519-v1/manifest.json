@@ -1,0 +1,38 @@
+{
+  "callsign": "AG7SU",
+  "canonicalization": "identity-v1",
+  "content_sha256": "edd6762e83950619c5ec1cb5006f2dbe093fa1fb98e552c029af3e73575432ff",
+  "content_size": 43,
+  "context": "arap/interoperability/v1",
+  "cose_algorithm": -19,
+  "created": 1800000000,
+  "expiry_signature_checks": {
+    "tampered_expiry_signature_invalid": true,
+    "valid_expired_signature": true
+  },
+  "media_type": "application/octet-stream",
+  "negative_checks": {
+    "corrupt_signature": true,
+    "empty_content_id": true,
+    "expired_content": true,
+    "future_created": true,
+    "modified_content": true,
+    "null_expiry": true,
+    "tampered_expiry": true,
+    "unknown_signed_label": true,
+    "untrusted_key": true,
+    "wrong_context": true,
+    "wrong_public_key": true
+  },
+  "payload_cbor_hex": "a601644152415002010371636f6e74656e742d7369676e617475726504654147375355051a6b49d20007a60178186170706c69636174696f6e2f6f637465742d73747265616d026b6964656e746974792d763103677368612d323536045820edd6762e83950619c5ec1cb5006f2dbe093fa1fb98e552c029af3e73575432ff05182b077818617261702f696e7465726f7065726162696c6974792f7631",
+  "private_seed_is_test_only": true,
+  "profile": "ARAP",
+  "proof_sha256": "27251050aed729a15698e9a4c0fe29b2a88a2b16984118fc62d6120b18cc728b",
+  "protected_headers_cbor_hex": "a3013203781f6170706c69636174696f6e2f766e642e617261702e70726f6f662b63626f72045820a050837d85070582ccf7394b0988847cc312cb88259b894899f6f239cf1791a5",
+  "public_key_spki_sha256": "a050837d85070582ccf7394b0988847cc312cb88259b894899f6f239cf1791a5",
+  "purpose": "content-signature",
+  "reference": "AR1E4SRAUFO24U2CVUY",
+  "signature_hex": "835ea0349ffa231d0b7e87c52b0f4c5beae0ba3b7c03f5d8ab69d52a6b39fd2d126b7e10133511cccdf4d3d2bff2478fefc8e91a97338392a19e148d2c69ac09",
+  "signature_input_cbor_hex": "846a5369676e6174757265315848a3013203781f6170706c69636174696f6e2f766e642e617261702e70726f6f662b63626f72045820a050837d85070582ccf7394b0988847cc312cb88259b894899f6f239cf1791a540589da601644152415002010371636f6e74656e742d7369676e617475726504654147375355051a6b49d20007a60178186170706c69636174696f6e2f6f637465742d73747265616d026b6964656e746974792d763103677368612d323536045820edd6762e83950619c5ec1cb5006f2dbe093fa1fb98e552c029af3e73575432ff05182b077818617261702f696e7465726f7065726162696c6974792f7631",
+  "version": 1
+}
