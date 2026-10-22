@@ -403,3 +403,15 @@ requires libjitterentropy.a, which is not installed; the macOS job therefore
 bundles OpenSSL's dynamic libraries. Workflow YAML, Python syntax, Bash syntax,
 and git diff --check passed. Native macOS, Windows, Linux arm64 builds and
 hosted CI have not run yet.
+
+## Desktop mutual authentication and beta inventory (2026-10-22)
+
+After adding the coordinated mutual challenge workflow to the desktop, the
+Linux Xvfb workflow smoke passed with two generated identities. It issued the
+inverse request pair, signed each request through the responder UI, accepted
+the pair, and rejected replay. The same smoke then completed its keyserver and
+trust disable/re-enable checks. `go test ./...`, `go vet ./...`, all 11 Python
+client integration tests, and the synthetic five-target release inventory
+check passed. The inventory check covers project, Go-module, and native helper
+notices; no real license choice or hosted artifact was used. These are local
+Linux checks; native macOS/Windows UI and hosted CI remain unobserved.

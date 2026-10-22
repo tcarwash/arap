@@ -172,7 +172,7 @@ func TestEnrollmentRoundTripAndReplay(t *testing.T) {
 	}
 }
 
-func TestEnrollmentPolicyGateAndWrongAudience(t *testing.T) {
+func TestEnrollmentSignaturePolicyAndWrongAudience(t *testing.T) {
 	pub, _, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		t.Fatal(err)
@@ -185,13 +185,13 @@ func TestEnrollmentPolicyGateAndWrongAudience(t *testing.T) {
 		t.Fatal(err)
 	}
 	store := &testStore{}
-	config := VerifyConfig{Audience: "https://wrong.example", Roots: x509.NewCertPool(), CallsignFromCert: func(*x509.Certificate) (string, error) { return "N0CALL", nil }, Store: store}
+	config := VerifyConfig{Audience: "https://wrong.example", Roots: x509.NewCertPool(), Now: time.Unix(1_800_000_000, 0), CallsignFromCert: func(*x509.Certificate) (string, error) { return "N0CALL", nil }, Store: store}
 	if result := Verify(Response{Challenge: encoded}, config); result.Accepted || result.Reason != "challenge audience mismatch" {
 		t.Fatalf("wrong audience was not rejected: %+v", result)
 	}
-	config = VerifyConfig{Audience: "https://expected.example", Roots: x509.NewCertPool(), CallsignFromCert: func(*x509.Certificate) (string, error) { return "N0CALL", nil }, Store: store}
-	if result := Verify(Response{Challenge: encoded}, config); result.Accepted || result.Reason != "challenge audience mismatch" {
-		t.Fatalf("audience policy did not fail closed: %+v", result)
+	config = VerifyConfig{Audience: "https://expected.example", Roots: x509.NewCertPool(), Now: time.Unix(1_800_000_000, 0), CallsignFromCert: func(*x509.Certificate) (string, error) { return "N0CALL", nil }, Store: store}
+	if result := Verify(Response{Challenge: encoded}, config); result.Accepted || result.Reason != "certificate chain must contain 1..8 certificates" {
+		t.Fatalf("enrollment reached its certificate-validation gate: %+v", result)
 	}
 }
 

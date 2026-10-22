@@ -373,6 +373,10 @@ def main() -> int:
             mutual_replay = json.loads(reports[-1][1])
             if mutual_replay.get("accepted"):
                 raise SystemExit("desktop mutual challenge workflow accepted a replayed pair")
+            # Restore the single-party values used by the following content
+            # reference and trust-disable/reenable smoke checks.
+            app.trust_public.set(str(public_a))
+            app.trust_call.set("AG7SU")
 
             if not expected_server.is_file():
                 raise SystemExit(f"adjacent keyserver executable is missing: {expected_server}")
@@ -454,7 +458,7 @@ def main() -> int:
                     app.verify_reference()
                     reenabled_reference_result = json.loads(app.ref_result.get("1.0", "end"))
                     if reenabled_reference_result.get("overall_policy") != "accepted":
-                        raise SystemExit("desktop could not re-enable the selected trust purpose")
+                        raise SystemExit(f"desktop could not re-enable the selected trust purpose: {reenabled_reference_result!r}")
                     _, stored_trust = app.run_cli(["trust", "list", "--store", str(trust)])
                     binding = next(item for item in json.loads(stored_trust)["bindings"] if item["callsign"] == "AG7SU")
                     if binding["purposes"] != ["content-signature"]:
@@ -475,7 +479,7 @@ def main() -> int:
                     setattr(app, name, None)
             root.update_idletasks()
             root.destroy()
-    print("Tk desktop signed and verified content and a frame-2 PixelQSO card, rejected a mismatched frame-1 card, verified and rejected a replayed challenge, published and fetched proof/key objects, and exercised hosted-reference verification through content edits and trust disable/re-enable.")
+        print("Tk desktop exercised content and PixelQSO proofs, one-way and mutual challenge authentication including replay rejection, and keyserver publication, resolution, trust disable/re-enable and content edits.")
     return 0
 
 
