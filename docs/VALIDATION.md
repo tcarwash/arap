@@ -449,3 +449,14 @@ CGO-free `go build ./...` passed for Linux amd64/arm64, macOS amd64/arm64 and
 Windows amd64. These compile checks do not validate native TQSL helper behavior
 or desktop startup on macOS/Windows; those hosted native jobs and real
 certificate/status validation remain open.
+
+After that platform check, `make enrollment-demo` passed again against the
+pinned TrustedQSL source. The native helper listed and signed with a generated
+certificate in an isolated TQSL data directory; the verifier accepted only
+synthetic demo status, authorized an Ed25519 content proof and challenge, and
+rejected the documented negative cases including replay and disablement. The
+installed-wheel Python consumer passed from outside the checkout across
+content, PixelQSO, challenge, endorsement and keyserver workflows, and
+`scripts/check-machine-interface.py` validated machine error envelopes against
+the live CLI. `make signing-demo` passed both content and PixelQSO paths. None
+of these local checks queried live LoTW status or used a station certificate.
