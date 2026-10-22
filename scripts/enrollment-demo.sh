@@ -46,7 +46,8 @@ go build -trimpath -o "$tmp_dir/arap" "$repo_dir/cmd/arap"
 go run "$repo_dir/examples/enrollment-demo" generate --out "$fixture_dir"
 "$build_dir/arap-tqsl-fixture-import$exe_suffix" "$tmp_dir/tqsl-data" \
   "$fixture_dir/root.pem" "$fixture_dir/intermediate.pem" \
-  "$fixture_dir/keybuf.b64" "$fixture_dir/leaf.pem"
+  "$fixture_dir/keybuf.b64" "$fixture_dir/leaf.pem" \
+  "$fixture_dir/keybuf-second.b64" "$fixture_dir/leaf-second.pem"
 tqsl_helper=${ARAP_TQSL_HELPER:-$build_dir/arap-tqsl-sign$exe_suffix}
 
 arap="$tmp_dir/arap$exe_suffix"
@@ -62,7 +63,8 @@ audience=arap-enrollment-demo-v1
   --purpose challenge-response --purpose content-signature
 certificate_list=$("$arap" enrollment certificates --request "$verifier_dir/enrollment.cbor" \
   --tqsl-helper "$tqsl_helper" --tqsl-directory "$tmp_dir/tqsl-data")
-case "$certificate_list" in *'"serial":"424242"'*) ;; *) echo "synthetic TQSL certificate was not discoverable" >&2; exit 1 ;; esac
+case "$certificate_list" in *'"serial":"424242"'*) ;; *) echo "synthetic TQSL certificate 424242 was not discoverable" >&2; exit 1 ;; esac
+case "$certificate_list" in *'"serial":"424244"'*) ;; *) echo "synthetic TQSL certificate 424244 was not discoverable" >&2; exit 1 ;; esac
 ARAP_DEMO_PASSPHRASE="$key_passphrase" PYTHONPATH="$repo_dir/interop/python" \
   python3 - "$arap" "$verifier_dir/enrollment.cbor" \
   "$responder_dir/arap-private.pem" "$tqsl_helper" "$tmp_dir/tqsl-data" \
@@ -80,15 +82,27 @@ listed = client.list_enrollment_certificates(
     request, helper=helper, tqsl_directory=tqsl_directory,
 )
 certificates = listed["result"].get("certificates", [])
-if not any(item.get("serial") == "424242" for item in certificates):
-    raise SystemExit("Python wrapper did not discover synthetic TQSL certificate serial 424242")
+serials = {item.get("serial") for item in certificates}
+if serials != {"424242", "424244"}:
+    raise SystemExit(f"Python wrapper found unexpected synthetic TQSL serials: {sorted(serials)}")
+try:
+    client.respond_enrollment(
+        request, private_key=private_key, helper=helper,
+        tqsl_directory=tqsl_directory,
+        arap_passphrase=os.environ["ARAP_DEMO_PASSPHRASE"],
+    )
+except Exception as exc:
+    if "multiple TQSL certificates match; specify --serial" not in str(exc):
+        raise
+else:
+    raise SystemExit("Python wrapper signed without selecting one of multiple matching certificates")
 result = client.respond_enrollment(
     request, private_key=private_key, helper=helper, serial="424242",
     tqsl_directory=tqsl_directory,
     arap_passphrase=os.environ["ARAP_DEMO_PASSPHRASE"],
 )
 Path(response_path).write_bytes(result["response"])
-print("Python enrollment wrapper listed and signed with synthetic TQSL certificate 424242.")
+print("Python enrollment wrapper listed both certificates, required serial selection, and signed with serial 424242.")
 PY
 go run "$repo_dir/examples/enrollment-demo" verify \
   --response "$responder_dir/enrollment-response.cbor" \

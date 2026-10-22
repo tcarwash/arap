@@ -72,6 +72,10 @@ func generate(args []string) error {
 	if err != nil {
 		return err
 	}
+	secondLeafKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return err
+	}
 	rootTemplate := caTemplate(1, "ARAP Synthetic Demo Root", now)
 	rootDER, err := x509.CreateCertificate(rand.Reader, rootTemplate, rootTemplate, &rootKey.PublicKey, rootKey)
 	if err != nil {
@@ -104,6 +108,13 @@ func generate(args []string) error {
 	if err != nil {
 		return err
 	}
+	secondLeafTemplate := *leafTemplate
+	secondLeafTemplate.SerialNumber = big.NewInt(424244)
+	secondLeafTemplate.NotBefore = now.Add(-30 * time.Second)
+	secondLeafDER, err := x509.CreateCertificate(rand.Reader, &secondLeafTemplate, intermediateCert, &secondLeafKey.PublicKey, intermediateKey)
+	if err != nil {
+		return err
+	}
 	if err := writePEM(filepath.Join(*out, "root.pem"), "CERTIFICATE", rootDER, 0644); err != nil {
 		return err
 	}
@@ -111,6 +122,9 @@ func generate(args []string) error {
 		return err
 	}
 	if err := writePEM(filepath.Join(*out, "leaf.pem"), "CERTIFICATE", leafDER, 0644); err != nil {
+		return err
+	}
+	if err := writePEM(filepath.Join(*out, "leaf-second.pem"), "CERTIFICATE", secondLeafDER, 0644); err != nil {
 		return err
 	}
 	expiredTemplate := *leafTemplate
@@ -134,7 +148,17 @@ func generate(args []string) error {
 	if err := os.WriteFile(filepath.Join(*out, "keybuf.b64"), []byte(wrapBase64(base64.StdEncoding.EncodeToString([]byte(keyRecord)))), 0600); err != nil {
 		return err
 	}
-	fmt.Println("generated synthetic N0CALL root/intermediate/callsign certificates and key record")
+	secondLeafPrivatePEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: mustPKCS8(secondLeafKey)})
+	secondLeafPublicDER, err := x509.MarshalPKIXPublicKey(&secondLeafKey.PublicKey)
+	if err != nil {
+		return err
+	}
+	secondLeafPublicPEM := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: secondLeafPublicDER})
+	secondKeyRecord := adif("PRIVATE_KEY", secondLeafPrivatePEM) + adif("PUBLIC_KEY", secondLeafPublicPEM) + "<eor>\n"
+	if err := os.WriteFile(filepath.Join(*out, "keybuf-second.b64"), []byte(wrapBase64(base64.StdEncoding.EncodeToString([]byte(secondKeyRecord)))), 0600); err != nil {
+		return err
+	}
+	fmt.Println("generated synthetic N0CALL root/intermediate and two matching callsign certificates")
 	return nil
 }
 
