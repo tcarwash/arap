@@ -486,3 +486,10 @@ negative checks for session mismatch and reused nonce passed. The desktop now
 exposes endorsement issue, ordered chain assembly, and explicit-root
 verification; Python syntax compilation and the Xvfb desktop smoke passed with
 all three CLI paths exercised using a mocked CLI. No live certificate was used.
+
+After these changes, the full local set passed again: `make test`, `make vet`,
+`make race`, `make vectors`, `make cddl`, all 12 Python client integration
+tests, and the Tk/Xvfb smoke. CGO-free `go build ./...` also passed for Linux
+amd64/arm64, macOS amd64/arm64, and Windows amd64. These results verify the
+source and local Linux UI only; hosted native jobs and live certificate/status
+validation remain pending.
