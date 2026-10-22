@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Start the Tk client and verify that its adjacent CLI is callable."""
+"""Exercise packaged Tk workflows and verify that the adjacent CLI is callable."""
 from __future__ import annotations
 
 import argparse
@@ -79,7 +79,8 @@ def main() -> int:
                                 if app.tabs.tab(tab_id, "text") == "Challenge")
             challenge_tab = root.nametowidget(challenge_id)
             challenge_text = " ".join(widget_texts(challenge_tab)).lower()
-            if "requester / verifier" not in challenge_text or "responder" not in challenge_text:
+            if ("requester / verifier" not in challenge_text or "responder" not in challenge_text
+                    or "mutual authentication" not in challenge_text):
                 raise SystemExit("challenge workflow role guidance is missing")
             app.select_tab("Start here")
             sample_binding = {
@@ -321,6 +322,57 @@ def main() -> int:
             replay_result = json.loads(reports[-1][1])
             if replay_result.get("overall_policy") == "accepted":
                 raise SystemExit("desktop challenge workflow accepted a replayed response")
+
+            # Exercise the desktop's coordinated mutual flow with two distinct
+            # identities, two response signatures, shared trust and one replay DB.
+            private_a, public_a = private_key, public_key
+            private_b = Path(temp) / "party-b-private.pem"
+            public_b = Path(temp) / "party-b-public.pem"
+            app.key_private.set(str(private_b))
+            app.key_public.set(str(public_b))
+            app.generate_keys()
+            app.trust_path.set(str(trust))
+            app.trust_public.set(str(public_b))
+            app.trust_call.set("K7ABC")
+            app.trust_purpose.set("challenge-response")
+            app.add_trust()
+
+            mutual_request_a = Path(temp) / "mutual-from-a.cbor"
+            mutual_request_b = Path(temp) / "mutual-from-b.cbor"
+            mutual_response_b = Path(temp) / "mutual-response-b.cose"
+            mutual_response_a = Path(temp) / "mutual-response-a.cose"
+            app.mutual_party_a.set("AG7SU")
+            app.mutual_party_b.set("K7ABC")
+            app.mutual_session_hex.set("617261702d736d6f6b652d73657373696f6e")
+            app.mutual_out_from_a.set(str(mutual_request_a))
+            app.mutual_out_from_b.set(str(mutual_request_b))
+            app.issue_mutual_challenges()
+            app.challenge_in_request.set(str(mutual_request_a))
+            app.challenge_signer.set("K7ABC")
+            app.challenge_private.set(str(private_b))
+            app.challenge_response_out.set(str(mutual_response_b))
+            app.respond_challenge()
+            app.challenge_in_request.set(str(mutual_request_b))
+            app.challenge_signer.set("AG7SU")
+            app.challenge_private.set(str(private_a))
+            app.challenge_response_out.set(str(mutual_response_a))
+            app.respond_challenge()
+            app.mutual_request_from_a.set(str(mutual_request_a))
+            app.mutual_response_from_b.set(str(mutual_response_b))
+            app.mutual_request_from_b.set(str(mutual_request_b))
+            app.mutual_response_from_a.set(str(mutual_response_a))
+            app.mutual_public_a.set(str(public_a))
+            app.mutual_public_b.set(str(public_b))
+            app.mutual_trust_a.set(str(trust))
+            app.mutual_trust_b.set(str(trust))
+            app.verify_mutual_challenges()
+            mutual_result = json.loads(reports[-1][1])
+            if not mutual_result.get("accepted"):
+                raise SystemExit(f"desktop mutual challenge verification failed: {mutual_result!r}")
+            app.verify_mutual_challenges()
+            mutual_replay = json.loads(reports[-1][1])
+            if mutual_replay.get("accepted"):
+                raise SystemExit("desktop mutual challenge workflow accepted a replayed pair")
 
             if not expected_server.is_file():
                 raise SystemExit(f"adjacent keyserver executable is missing: {expected_server}")
