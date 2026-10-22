@@ -35,6 +35,7 @@ def main() -> int:
             required.add("LICENSE")
             if not required.issubset(names):
                 raise SystemExit(f"{target} archive is missing its manifest or dependency notices")
+            inventory.append((target, "ARAP project", "See bundled LICENSE", "LICENSE"))
             manifest = bundle.read("BUILD-MANIFEST.txt").decode("utf-8")
             if f"Target: {target}\n" not in manifest:
                 raise SystemExit(f"{target} archive has a mismatched build manifest")

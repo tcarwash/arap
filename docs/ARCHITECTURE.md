@@ -36,13 +36,15 @@ These are conceptual boundaries. The implementation plan proposes packages withi
 
 ```text
 arap-core          COSE/CBOR proof encoding, digest, algorithms, validators
-arap-identity      Ed25519 signer, local trust policy, future certificate identity evidence
-arap-content       signed object / application-defined canonicalizers
-challenge/         nonce issuance, pending challenge, one-time verification
+identity/          Ed25519 keys, local trust, public-key parsing
+protocol/          COSE content proofs, hashing, verification policy
+lotwenroll/        TQSL enrollment evidence and certificate status policy
+challenge/         nonce issuance, pending challenge, one-time/mutual verification
 reference/         Base32 identifiers, content addresses, bounded HTTP client
-arap-cli           sign, verify, challenge, respond, publish, resolve
-arap-server        optional untrusted minimal object store
-arap-adapters      later: pixelqso, opv, other applications
+adapters/pixelqso/ PixelQSO card canonicalization and proof integration
+endorsement/       scoped key delegation and offline chain verification
+cmd/arap/          content, trust, challenge, enrollment, and reference CLI
+cmd/arap-keyserver optional untrusted object service
 ```
 
 **Important:** No automatic trust inheritance from an arbitrary certificate chain or unrelated QSO signature.

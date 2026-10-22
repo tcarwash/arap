@@ -50,8 +50,8 @@ def main() -> int:
             raise SystemExit(f"expected {len(TARGETS)} versioned archives, found {len(archives)}")
         with (output / "DEPENDENCY-LICENSE-INVENTORY.csv").open(encoding="utf-8", newline="") as report:
             rows = list(csv.DictReader(report))
-        if len(rows) != 13:
-            raise SystemExit(f"expected 13 inventory rows, got {len(rows)}")
+        if len(rows) != 18:
+            raise SystemExit(f"expected 18 inventory rows, got {len(rows)}")
         print("Release assembly validated five target archives and all Go/native dependency inventory rows.")
     return 0
 
