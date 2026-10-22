@@ -485,7 +485,10 @@ both signed responses. `make vectors`, `make cddl`, the Go pair verifier, and
 negative checks for session mismatch and reused nonce passed. The desktop now
 exposes endorsement issue, ordered chain assembly, and explicit-root
 verification; Python syntax compilation and the Xvfb desktop smoke passed with
-all three CLI paths exercised using a mocked CLI. No live certificate was used.
+all three CLI argument paths exercised using a mocked CLI. The smoke then
+created disposable Ed25519 keys and exercised two-link endorsement issuance,
+chain assembly and explicit-root verification through the real CLI. No live
+certificate was used.
 
 After these changes, the full local set passed again: `make test`, `make vet`,
 `make race`, `make vectors`, `make cddl`, all 12 Python client integration

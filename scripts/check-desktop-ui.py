@@ -146,6 +146,68 @@ def main() -> int:
                     or verification_calls[0].count("--root-purpose") != 2
                     or "--subject-public-key" not in verification_calls[0]):
                 raise SystemExit("desktop endorsement verification did not pass explicit root and subject policy")
+            endorsement_dir = Path(temp) / "endorsement-ui-e2e"
+            endorsement_dir.mkdir()
+            passphrase = "test-only desktop passphrase"
+            key_files: dict[str, tuple[Path, Path]] = {}
+            for name in ("root", "delegate", "subject"):
+                private_path = endorsement_dir / f"{name}.age"
+                public_path = endorsement_dir / f"{name}.pem"
+                generated = subprocess.run(
+                    [str(expected_cli), "keygen", "--private-key", str(private_path),
+                     "--public-key", str(public_path), "--passphrase-stdin"],
+                    input=f"{passphrase}\n{passphrase}\n", capture_output=True, text=True,
+                    check=False, timeout=30,
+                )
+                if generated.returncode:
+                    raise SystemExit(f"could not create disposable endorsement key: {generated.stderr.strip()}")
+                key_files[name] = (private_path, public_path)
+            real_endorsement_errors: list[str] = []
+            original_ask_passphrase = app._ask_passphrase
+            original_report = app._report
+            original_error = app._error
+            app._ask_passphrase = lambda *_args, **_kwargs: passphrase
+            app._report = lambda *_args, **_kwargs: None
+            app._error = lambda exc: real_endorsement_errors.append(str(exc))
+            try:
+                app.endorse_issuer.set("K1ROOT")
+                app.endorse_private.set(str(key_files["root"][0]))
+                app.endorse_subject.set("K2DELEG")
+                app.endorse_subject_public.set(str(key_files["delegate"][1]))
+                app.endorse_purposes.set("content-signature,key-endorsement")
+                app.endorse_depth.set("1")
+                app.endorse_days.set("30")
+                app.endorse_output.set(str(endorsement_dir / "root-link.cose"))
+                app.issue_endorsement()
+                app.endorse_issuer.set("K2DELEG")
+                app.endorse_private.set(str(key_files["delegate"][0]))
+                app.endorse_subject.set("K3SUBJ")
+                app.endorse_subject_public.set(str(key_files["subject"][1]))
+                app.endorse_purposes.set("content-signature")
+                app.endorse_depth.set("0")
+                app.endorse_output.set(str(endorsement_dir / "delegate-link.cose"))
+                app.issue_endorsement()
+                app.endorse_chain_links.set(",".join((str(endorsement_dir / "root-link.cose"),
+                                                       str(endorsement_dir / "delegate-link.cose"))))
+                app.endorse_chain_output.set(str(endorsement_dir / "chain.cbor"))
+                app.pack_endorsement_chain()
+                app.endorse_chain.set(str(endorsement_dir / "chain.cbor"))
+                app.endorse_root_call.set("K1ROOT")
+                app.endorse_root_public.set(str(key_files["root"][1]))
+                app.endorse_root_purposes.set("content-signature,key-endorsement")
+                app.endorse_root_depth.set("2")
+                app.endorse_expected_subject.set("K3SUBJ")
+                app.endorse_expected_public.set(str(key_files["subject"][1]))
+                app.endorse_verify_purpose.set("content-signature")
+                app.verify_endorsement()
+            finally:
+                app._ask_passphrase = original_ask_passphrase
+                app._report = original_report
+                app._error = original_error
+            if real_endorsement_errors:
+                raise SystemExit(f"desktop endorsement CLI workflow failed: {real_endorsement_errors}")
+            if not json.loads(app.endorsement_result.get("1.0", "end")).get("accepted"):
+                raise SystemExit("desktop endorsement workflow did not accept its valid two-link chain")
             app.select_tab("Start here")
             sample_binding = {
                 "callsign": "N0CALL", "key_id_sha256": "a" * 64,
@@ -548,7 +610,7 @@ def main() -> int:
                     setattr(app, name, None)
             root.update_idletasks()
             root.destroy()
-        print("Tk desktop exercised content and PixelQSO proofs, one-way and mutual challenge authentication including replay rejection, endorsement issue/chain assembly/explicit-root verification, and keyserver publication, resolution, trust disable/re-enable and content edits.")
+        print("Tk desktop exercised content and PixelQSO proofs, one-way and mutual challenge authentication including replay rejection, endorsement issue/chain assembly/explicit-root verification through the real CLI, and keyserver publication, resolution, trust disable/re-enable and content edits.")
     return 0
 
 

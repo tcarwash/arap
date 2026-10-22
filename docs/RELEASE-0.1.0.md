@@ -163,8 +163,9 @@ certificate/policy gates below.
   repeated-nonce cases are rejected. A separately maintained consumer review remains.
 - The Tk desktop now provides endorsement issuance, root-to-subject chain
   assembly, and explicit-root chain verification. The desktop smoke exercises
-  each CLI argument path, including purpose lists and passphrase stdin; native
-  manual interaction remains unverified.
+  each CLI argument path, including purpose lists and passphrase stdin, then
+  runs a two-link endorsement flow through the real CLI with disposable keys;
+  native manual interaction remains unverified.
 - A versioned Python wrapper API now covers content, PixelQSO, one-way and mutual
   challenge, endorsement, and experimental LoTW enrollment operations. Its
   integration tests build the local CLI and verify byte proof exchange, policy
