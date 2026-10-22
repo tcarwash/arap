@@ -98,7 +98,8 @@ def main() -> int:
             app.enrollment_refresh_call.set("N0CALL")
             app.enrollment_refresh_key.set("a" * 64)
             app.enrollment_path.set("enrollment.sqlite")
-            app.enrollment_tqsl_directory.set("/tmp/custom-tqsl-data")
+            custom_tqsl_directory = str(Path(temp) / "custom-tqsl-data")
+            app.enrollment_tqsl_directory.set(custom_tqsl_directory)
             refresh_calls: list[list[str]] = []
             refresh_reports: list[tuple[str, str]] = []
             original_run_cli = app.run_cli
@@ -116,7 +117,7 @@ def main() -> int:
                 app._report = original_report
             if (not refresh_calls or refresh_calls[0][:2] != ["enrollment", "refresh"]
                     or "--tqsl-directory" not in refresh_calls[0]
-                    or "/tmp/custom-tqsl-data" not in refresh_calls[0]
+                    or custom_tqsl_directory not in refresh_calls[0]
                     or not refresh_reports):
                 raise SystemExit("desktop status refresh did not call the supported CLI operation")
             diagnostics = app.setup_diagnostics_text()
