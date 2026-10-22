@@ -74,7 +74,7 @@ Validation run on 2026-10-20: `go test -race ./...`, `go vet ./...`, `git diff -
 1. **M0:** The current TQSL API is excluded from the Ed25519 allowlist; this no longer blocks native development. Ed25519 schema and cross-language vectors exist. Broader parser-negative vectors and independent review remain before protocol claims mature.
 2. **M1:** Current offline fixtures establish Ed25519 signing, content binding and explicit local trust. Manual key pins provide local authorization, not independent license verification.
 3. **Later gates:** Real PixelQSO fixtures, durable challenge replay tests and malicious resolver tests supply separate evidence. Synthetic blobs cannot establish adapter or RF compatibility.
-4. **Conditional gates:** TQSL policy permission and OPV remain separate research. No maintainers were contacted, LoTW services queried, services deployed or radio transmissions made. See the later local TQSL test note below.
+4. **Conditional gates:** Live TQSL/LoTW certificate and status validation remains a final test; the selected evidence sources are TQSL/ARRL configured roots and timestamped LoTW serial status. OPV compatibility remains separate research. No maintainers were contacted, LoTW services queried, services deployed or radio transmissions were made during the earlier validation snapshot.
 
 ## Latest local verification
 

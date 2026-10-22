@@ -2,20 +2,19 @@
 
 TQSL remains a useful callsign-certificate manager, but its current Signing API is not suitable for ARAP content or challenge signatures. In inspected upstream source commit `1916fc14a8cfc7f287742ae5a34aa986353d9df7` (2026-10-20), `tqsl_signDataBlock` calls `EVP_SignInit(ctx, EVP_sha1())` and `tqsl_verifyDataBlock` calls `EVP_VerifyInit(ctx, EVP_sha1())`. TQSL's key-generation path creates RSA keys. This is RSA PKCS#1 v1.5 with SHA-1, corresponding to COSE RS1 (`-65535`), which the IANA COSE registry marks deprecated. ARAP accepts this only for the short-lived enrollment assertion; it is not enabled as an ARAP proof algorithm.
 
-## Before freezing a COSE algorithm or claiming support
+## Scope and remaining validation
 
-1. Recheck the implementation when supported TQSL versions change. The currently inspected Signing API hardcodes SHA-1 and is blocked for ARAP proof signing.
-2. Identify how the operation hashes/encodes its input and formats signatures. Determine whether it can sign the exact COSE `Signature1` input under a standard, fully specified COSE algorithm. Reject an adapter that requires signing some nonstandard transformation or publishing a private COSE algorithm without explicit review.
-3. Determine supported Callsign Certificate public-key types, sizes, key usages, EKUs, policy OIDs, callsign fields, date ranges and issuer chain. A certificate's issuer signature algorithm is not the same as the subscriber key's message-signing algorithm.
-4. Test with a purpose-built, non-station test credential if TQSL supports it. For a real station certificate, require explicit user consent and never copy its private key into fixtures, logs or exports for this research.
-5. Confirm callsign certificate trust anchors and revocation/status mechanisms, how often status updates, and how offline verification represents stale or unknown status. A valid signature alone does not establish current certificate status.
-6. Treat the enrollment assertion as ARAP authentication evidence only. Do not describe it as an ARRL-approved login, endorsement, or supported LoTW authentication mechanism.
-7. Verify the API lifecycle and threading expectations. `tqsl_beginSigning` is documented to create an unencrypted in-memory copy of the private key and `tqsl_endSigning` zero-fills that copy. Keep it alive only for the operation, ensure cleanup on all error paths, and keep password input out of process arguments/logs.
-8. Document offline trust behavior, certificate expiry/invalidations, callsign matching and portable/alternate callsign rules. Never silently equate `AG7SU`, `AG7SU/P` and `AG7SU/7`.
+The data-block API is not a candidate for ARAP content or challenge signing: it
+uses RSA/SHA-1, while those ARAP profiles require Ed25519. The project accepts
+the API only for the distinct, short-lived enrollment assertion. Remaining
+validation work is to exercise a real Callsign Certificate and live status
+response after implementation, and to recheck any TQSL version that changes
+the signing lifecycle, certificate roots, or serial-status behavior. Never
+copy a station private key into fixtures, logs, or exported evidence.
 
 ## Profile outcome
 
-- Use the implemented Ed25519 COSE profile (`-19`) for ARAP content and challenge-response signatures. Keep TQSL as the preferred LoTW credential lifecycle. A separate fresh-challenge flow may use the Callsign Certificate to bind an ARAP Ed25519 key to a callsign; this is an enrollment assertion, not an ARAP content signature. The candidate flow and open gates are in [LoTW-backed ARAP key enrollment](LOTW-BINDING-DESIGN.md).
+- Use the implemented Ed25519 COSE profile (`-19`) for ARAP content and challenge-response signatures. Keep TQSL as the preferred LoTW credential lifecycle. The separate fresh-challenge flow binds a Callsign Certificate to an ARAP Ed25519 key as an enrollment assertion, not an ARAP content signature. The implemented flow and remaining live-validation gate are in [LoTW-backed ARAP key enrollment](LOTW-BINDING-DESIGN.md).
 - Keep generic hashing, CSPRNG use, proof parsing/verification and transport in ARAP or its platform libraries; those operations do not become LoTW credential operations. At the identity/signing layer, require an approved provider to sign the exact COSE `Signature1` bytes and expose its public key without exporting the private key. The current Go `Signer` interface is only an interface boundary: the v1 profile still allowlists Ed25519, and the inspected TQSL API cannot implement it.
 - Do not enable the current TQSL API as an ARAP content or COSE signer. The project accepts its legacy RSA-SHA1 operation only for the separately versioned, short-lived enrollment assertion, without a per-operation crypto opt-in. ARAP content and challenge-response remain Ed25519. Freshness policy is set at 24 hours by default; live endpoint behavior remains unvalidated. This ARAP authentication evidence does not imply ARRL approval. Never label the TQSL signature as Ed25519 or use it to sign ARAP content.
 - Never treat LoTW certificate status as permanently valid based solely on the certificate bytes or a signed `created` timestamp. Require fresh status evidence under ARAP policy and fail closed when it is missing. Live endpoint behavior with a real certificate remains to be validated.

@@ -54,7 +54,7 @@ An ARAP proof is one COSE_Sign1 object whose signed payload is a CBOR map. Conce
 |---|---|
 | `profile` | Literal `ARAP` |
 | `version` | Integer `1` (implemented prototype profile) |
-| `purpose` | `content-signature`; challenge responses use the separate challenge-response schema; endorsements are a future extension |
+| `purpose` | `content-signature`; challenge responses use the separate challenge-response schema; key endorsements have their own experimental profile |
 | `signer` | Normalized callsign claimed by the signing key |
 | `created` | UTC Unix timestamp in seconds |
 | `not_after` | Optional content expiry; challenge response expiry is a required request-bound claim in its separate schema |
