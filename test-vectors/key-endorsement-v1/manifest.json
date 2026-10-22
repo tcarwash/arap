@@ -7,7 +7,14 @@
     "key-endorsement"
   ],
   "expires_at": 1800086400,
+  "independent_python_verification": "accepted",
   "issuer": "K1ROOT",
+  "negative_checks": {
+    "purpose_escalation_rejected": true,
+    "unauthorized_challenge_purpose_rejected": true,
+    "wrong_root_rejected": true,
+    "wrong_subject_rejected": true
+  },
   "negative_expectations": {
     "challenge_response_purpose": "purpose_not_authorized",
     "wrong_root": "untrusted_root"

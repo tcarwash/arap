@@ -147,7 +147,8 @@ certificate/policy gates below.
   purpose-scoped Ed25519 delegation chains against caller-supplied roots. It
   limits validity and depth, rejects purpose/depth escalation and key cycles,
   supports caller-supplied disablement, and has a deterministic Python-generated
-  two-link vector. Chains have a bounded canonical-CBOR transport container,
+  two-link vector independently verified by Python, including wrong-root,
+  unauthorized-purpose, escalation and subject-mismatch negative cases. Chains have a bounded canonical-CBOR transport container,
   independently generated and checked against a separate schema. The CLI and
   Python wrapper now cover issue, assembly and explicit-root verification; review
   by an independent implementation remains.
