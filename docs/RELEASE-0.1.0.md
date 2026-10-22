@@ -339,9 +339,12 @@ replay acceptance, data loss or a broken supported installation path.
 
 ## 5. Publish and collect beta feedback
 
-- [ ] Add a release workflow for `v0.1.0-beta.*` that builds the tested source,
+- [x] Add a release workflow for `v0.1.0-beta.*` that builds the tested source,
   produces versioned archives and SHA-256 checksums, includes notices and
   dependency inventory, and assembles a draft prerelease with concise notes.
+  The workflow waits for successful native CI on the exact tag and verifies
+  each archive's target and version; hosted execution awaits an owner-selected
+  project license and a beta tag.
 - [ ] Decide artifact signing for the supported platforms and disclose any
   unsigned beta downloads. Checksums alone do not authenticate a release.
 - [ ] Review the exact candidate artifacts, CI evidence and known issues before
