@@ -331,8 +331,10 @@ Python/Tk may remain explicit beta prerequisites if the launcher diagnoses them.
   disposable deployment; a public hosted keyserver is not required for beta.
 - [ ] Verify the advertised PixelQSO workflow with a redistributable saved-card
   fixture, including paired frames, an edited card and an unavailable resolver.
-- [ ] Fix stale implementation/validation documentation, including the completed
+- [x] Fix stale implementation/validation documentation, including the completed
   synthetic helper run. Record remaining limits against the release commit.
+  Current local Linux packaged-helper evidence is in [`VALIDATION.md`](VALIDATION.md);
+  hosted/native platform results remain pending.
 
 Acceptance: advertised workflows pass from the distributed artifacts, with no
 known blocker involving private-key exposure, incorrect identity acceptance,

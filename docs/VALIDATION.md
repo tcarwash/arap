@@ -415,3 +415,11 @@ client integration tests, and the synthetic five-target release inventory
 check passed. The inventory check covers project, Go-module, and native helper
 notices; no real license choice or hosted artifact was used. These are local
 Linux checks; native macOS/Windows UI and hosted CI remain unobserved.
+
+The same commit (`2b494cd`) was then packaged as a Linux amd64 desktop ZIP with
+the pinned native TQSLLIB helper and CI-style Go dependency notices. The archive
+manifest matches the commit and TQSL revision. The archive checker passed,
+the extracted-helper synthetic enrollment demo passed, and both the installed
+Python consumer and Xvfb desktop workflow passed against the extracted ZIP.
+The local release archive reports version `dev`; this does not establish a
+hosted, tag-based prerelease build.
