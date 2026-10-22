@@ -394,6 +394,8 @@ and make enrollment-demo passed. A package assembled using the new
 external-helper path passed bundle checking, extracted-helper synthetic
 enrollment/signing/authentication, and the Xvfb desktop workflow smoke. A
 static-TQSLLIB/dynamic-OpenSSL helper also built and started successfully.
+The macOS dylib-copy/load-path test passes with mocked `otool` and
+`install_name_tool` calls.
 Static OpenSSL linking on this Debian host failed because its static libcrypto
 requires libjitterentropy.a, which is not installed; the macOS job therefore
 bundles OpenSSL's dynamic libraries. Workflow YAML, Python syntax, Bash syntax,
