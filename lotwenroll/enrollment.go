@@ -120,6 +120,11 @@ type VerifyConfig struct {
 	// AllowedPurposes is verifier policy for version 2 enrollment challenges.
 	// An empty value preserves the version 1 challenge-response-only policy.
 	AllowedPurposes []string
+	// EnableLegacyRSASHA1 is retained for source compatibility and ignored.
+	// TQSL's supported RSA/SHA-1 is accepted only for enrollment assertions;
+	// it is never used by ARAP content or challenge signatures.
+	// Deprecated: callers do not need to set this field.
+	EnableLegacyRSASHA1 bool
 }
 
 type Verification struct {
