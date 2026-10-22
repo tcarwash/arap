@@ -22,10 +22,11 @@ TQSL remains a useful callsign-certificate manager, but its current Signing API 
 
 ## Enrollment prototype status
 
-The experimental challenge and dual-signature envelope are implemented in
-`lotwenroll/`. RSA/SHA-1 verification remains disabled by default behind
-`EnableLegacyRSASHA1`; the responder also requires the explicit CLI option or
-desktop confirmation. `tqsl-helper/` builds a native TQSLLIB adapter that signs
+The challenge and dual-signature envelope are implemented in
+`lotwenroll/`. TQSL's supported RSA/SHA-1 signature is accepted only for the
+short-lived enrollment assertion; explicit CLI policy and desktop confirmation
+remain required. ARAP content and challenge signatures remain Ed25519.
+`tqsl-helper/` builds a native TQSLLIB adapter that signs
 the exact challenge bytes, returns public chain certificates, and never calls
 the private-key export API. The CLI can issue, respond to and verify
 enrollment challenges, and `ARRLCertificateStatusClient` queries the public

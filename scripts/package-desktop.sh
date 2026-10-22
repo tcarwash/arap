@@ -96,6 +96,8 @@ if [[ -n "${ARAP_TQSL_HELPER_DIR:-}" ]]; then
   cp "$helper_dir/$helper_name" "$stage/"
   cp "$helper_dir/config.xml" "$stage/"
   cp "$helper_dir/TQSLLIB-LICENSE.txt" "$stage/"
+  if [[ -f "$helper_dir/OPENSSL-LICENSE.txt" ]]; then cp "$helper_dir/OPENSSL-LICENSE.txt" "$stage/"; fi
+  if [[ -f "$helper_dir/VCPKG-DEPENDENCY-NOTICES.txt" ]]; then cp "$helper_dir/VCPKG-DEPENDENCY-NOTICES.txt" "$stage/"; fi
   if [[ -f "$helper_dir/libtqsllib.so" ]]; then cp "$helper_dir/libtqsllib.so" "$stage/"; fi
   if [[ -f "$helper_dir/libtqsllib.dylib" ]]; then cp "$helper_dir/libtqsllib.dylib" "$stage/"; fi
   if [[ "$goos" == darwin ]]; then

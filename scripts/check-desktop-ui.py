@@ -63,6 +63,11 @@ def main() -> int:
             raise SystemExit(f"could not load desktop application: {script}")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
+        if args.bundle:
+            helper_name = "arap-tqsl-sign.exe" if os.name == "nt" else "arap-tqsl-sign"
+            expected_helper = bundle_dir / helper_name
+            if expected_helper.is_file() and Path(module.find_tqsl_helper()).resolve() != expected_helper.resolve():
+                raise SystemExit("desktop did not discover the adjacent native TQSL helper")
         root = tk.Tk()
         root.geometry("840x620")
         try:

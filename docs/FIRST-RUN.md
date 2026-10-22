@@ -29,15 +29,16 @@ create an ARAP account or provide an authentication server.
   response once. Keep the verifier's challenge database durable; replay must
   fail. Mutual authentication requires both inverse requests to be bound to
   the same application session.
-- **Use TQSL enrollment (experimental):** currently included only in the Linux
-  amd64 bundle; the beta target is all supported desktop bundle platforms.
+- **Use TQSL enrollment:** native enrollment bundles target Linux amd64/arm64,
+  macOS amd64/arm64 and Windows amd64; check release validation for the
+  hosted native results.
   Import and verify a current Callsign Certificate in TQSL first. Issue
   a fresh enrollment challenge for the intended audience and ARAP key. On the
   responder, list matching certificate serials, choose the intended serial, and
-  explicitly acknowledge TQSL's legacy RSA-SHA1 signature for this enrollment
-  assertion. ARAP's content and challenge signatures remain Ed25519. The
+  explicitly acknowledge TQSL's supported RSA-SHA1 signature for this
+  enrollment assertion. ARAP's content and challenge signatures remain Ed25519. The
   verifier separately checks its certificate roots and current status service. This is experimental
-  proof of certificate/key control; it is not an ARRL-approved login, QSO
+  authentication evidence for ARAP; it is not an ARRL-approved login, QSO
   submission, or LoTW transaction. Do not select a real content-signing purpose
   until the verifier has reviewed its policy. The checked integration versions
   are TQSLLIB 2.8.7 and TQSL 2.8.7-rc5; other TQSL releases are not yet

@@ -2,20 +2,21 @@
 
 This bundle contains the ARAP command-line client and keyserver plus the Tk desktop app. Python 3 and Tk 8.6 are required to run the desktop app.
 
-Linux amd64 bundles also include the TQSL enrollment helper, pinned TQSLLIB
-runtime library and its `config.xml` resources (TrustedQSL 2.8.7 source revision
+Native enrollment bundles include the TQSL helper, pinned TQSLLIB
+runtime resources and its `config.xml` (TrustedQSL 2.8.7 source revision
 `1916fc14a8cfc7f287742ae5a34aa986353d9df7`). The helper requires the standard
-Linux runtime libraries for OpenSSL 3, SQLite, Expat, zlib, zstd, and the C++ runtime. A compatible
+platform runtime libraries for OpenSSL 3, SQLite, Expat, zlib, zstd, and the C++ runtime. A compatible
 TQSL installation and an existing Callsign Certificate are needed to perform
 real enrollment. Enrollment integration was exercised with pinned TQSLLIB 2.8.7
 and a local TQSL 2.8.7-rc5 installation; other TQSL releases are not yet
-qualified. Its challenge signature is experimental and uses TQSL's
-legacy RSA-SHA1 API; the verifier requires explicit policy opt-in. This feature
-is not an ARRL-approved login or LoTW transaction.
+qualified. The helper uses TQSL's supported RSA-SHA1 API only for the fresh
+enrollment assertion that binds the station certificate to an ARAP key. ARAP
+content and challenge signatures use Ed25519. The assertion is authentication
+evidence for ARAP; it is not an ARRL-approved login or LoTW transaction.
 
-Bundles for Linux arm64, macOS, and Windows are preview builds: they do not
-include the native enrollment helper and therefore do not support the
-TQSL-backed enrollment flow.
+The native enrollment build matrix targets Linux amd64/arm64, macOS amd64/arm64
+and Windows amd64. Check the release notes for which native builds have passed
+hosted validation.
 
 ## Start the desktop app
 

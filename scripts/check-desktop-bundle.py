@@ -56,6 +56,10 @@ def main() -> int:
         required |= {f"arap-tqsl-sign{executable_suffix}", "config.xml", "TQSLLIB-LICENSE.txt"}
         if target.startswith("linux-"):
             required.add("libtqsllib.so")
+        elif enrollment and target.startswith("darwin-"):
+            required.add("OPENSSL-LICENSE.txt")
+        elif enrollment and target == "windows-amd64":
+            required.add("VCPKG-DEPENDENCY-NOTICES.txt")
     with zipfile.ZipFile(archive) as bundle:
         bad_member = bundle.testzip()
         if bad_member:
@@ -117,6 +121,16 @@ def main() -> int:
             license_text = bundle.read("TQSLLIB-LICENSE.txt").decode("utf-8")
             if "American Radio Relay League" not in license_text or "Redistribution" not in license_text:
                 raise SystemExit("TQSLLIB redistribution notice is incomplete")
+            if target.startswith("darwin-") and any(
+                name not in bundle.read("OPENSSL-LICENSE.txt").decode("utf-8")
+                for name in ("OpenSSL", "Expat")
+            ):
+                raise SystemExit("macOS dependency redistribution notices are incomplete")
+            if target == "windows-amd64" and any(
+                name not in bundle.read("VCPKG-DEPENDENCY-NOTICES.txt").decode("utf-8")
+                for name in ("openssl", "sqlite3", "expat", "zlib")
+            ):
+                raise SystemExit("vcpkg dependency notices are incomplete")
     print(f"{target} bundle verified: {archive}")
     return 0
 

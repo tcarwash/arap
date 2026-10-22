@@ -44,7 +44,8 @@ def find_tqsl_helper() -> str:
         return configured
     cli = find_arap_cli()
     if cli:
-        adjacent = Path(cli).resolve().with_name("arap-tqsl-sign")
+        suffix = ".exe" if os.name == "nt" else ""
+        adjacent = Path(cli).resolve().with_name(f"arap-tqsl-sign{suffix}")
         if adjacent.is_file():
             return str(adjacent)
     return shutil.which("arap-tqsl-sign") or ""
@@ -149,10 +150,13 @@ class ARAPDesktop:
 
         helper = self.enrollment_tqsl_helper.get().strip()
         if not helper or not Path(helper).is_file():
-            rows.append("TQSL helper: not found; TQSL enrollment requires the Linux amd64 bundle or ARAP_TQSL_HELPER.")
+            rows.append("TQSL helper: not found; use a native enrollment bundle or set ARAP_TQSL_HELPER.")
         else:
             helper_path = Path(helper).resolve()
-            missing = [name for name in ("libtqsllib.so", "config.xml")
+            runtime_files = ("config.xml",) if os.name == "nt" or sys.platform == "darwin" else (
+                "libtqsllib.so", "config.xml"
+            )
+            missing = [name for name in runtime_files
                        if not (helper_path.parent / name).is_file()]
             try:
                 result = subprocess.run([helper], capture_output=True, text=True,
@@ -277,7 +281,7 @@ class ARAPDesktop:
         ttk.Separator(tab).grid(row=7, column=0, columnspan=3, sticky="ew", pady=12)
         ttk.Label(
             tab,
-            text="Optional Callsign Certificate enrollment is in Keys & Trust. It binds a fresh challenge to the chosen ARAP key fingerprint and verifier audience; choose a matching current TQSL certificate serial before signing. Linux amd64 only. This experimental RSA-SHA1 assertion is not an ARRL-approved login or LoTW transaction.",
+            text="Callsign Certificate enrollment is in Keys & Trust. It binds a fresh challenge to the chosen ARAP key fingerprint and verifier audience; choose a matching current TQSL certificate serial before signing. This RSA-SHA1 assertion provides authentication evidence for ARAP; it is not an ARRL-approved login or LoTW transaction.",
             style="Sub.TLabel", wraplength=760, justify="left",
         ).grid(row=8, column=0, columnspan=3, sticky="w")
         tab.columnconfigure(1, weight=1)
@@ -621,7 +625,7 @@ class ARAPDesktop:
         if "unlock TQSL certificate" in message:
             message += "\n\nCheck the TQSL certificate password, selected serial, and that the certificate is current and enabled in TQSL."
         elif "TQSL native helper not found" in message:
-            message += "\n\nUse the Linux amd64 bundle or select the native helper with ARAP_TQSL_HELPER."
+            message += "\n\nUse a native enrollment bundle or select the helper with ARAP_TQSL_HELPER."
         messagebox.showerror("ARAP", message, parent=self.root)
 
     def _ask_passphrase(self, title: str, confirm: bool = False) -> str:

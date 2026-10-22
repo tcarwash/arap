@@ -192,19 +192,19 @@ The current stable Go 1.27.3 also passed `make test` and `make vet`, confirming 
 
 ## LoTW enrollment investigation
 
-On 2026-10-20, an initial local TQSL smoke test used the configured station credential to sign one generated synthetic ADIF contact. No `.tq8` was uploaded, but TQSL warned that it may treat the contact as already uploaded on a later submission. Do not upload that generated file. This was not ARAP or LoTW authentication evidence. Future synthetic ADIF signing must use TQSL 2.8.3 or later with `-z`, which signs without upload tracking. The separate fresh-challenge enrollment protocol now has a verifier-side prototype; the TQSL adapter and its legacy-signature, certificate-status and permitted-use decisions remain open.
+On 2026-10-20, an initial local TQSL smoke test used the configured station credential to sign one generated synthetic ADIF contact. No `.tq8` was uploaded, but TQSL warned that it may treat the contact as already uploaded on a later submission. Do not upload that generated file. This was not ARAP or LoTW authentication evidence. Future synthetic ADIF signing must use TQSL 2.8.3 or later with `-z`, which signs without upload tracking. The separate fresh-challenge enrollment protocol has since been exercised with synthetic TQSL certificates; real station-certificate and live status validation remain deferred to final testing.
 
-The installed TQSL 2.8.7-rc5 completed a synthetic ADIF `-z` test-sign run and explicitly reported that it had not recorded the QSO; no upload was made. The `lotwenroll` verifier passes a fake-CA dual-signature round trip and replay rejection using generated RSA and Ed25519 keys. Its SQLite store atomically consumes a nonce and records the binding, survives reopen, rejects a mismatched key fingerprint, and supports disablement. Version 1 enrollment remains challenge-response-only; version 2 carries explicitly allowed purposes and can authorize content when the verifier opts in. The CLI content path checks that purpose along with certificate expiry and status age. The RSA/SHA-1 verifier remains disabled by default. The pinned CDDL 0.10.7 validator compiles the version 1 and version 2 enrollment challenges plus the response schema; both challenge vectors and all existing vectors validate. This does not exercise the real station certificate, TQSL's raw signing API, ARRL chain/callsign parsing, or a current status provider.
+The installed TQSL 2.8.7-rc5 completed a synthetic ADIF `-z` test-sign run and explicitly reported that it had not recorded the QSO; no upload was made. The `lotwenroll` verifier passes fake-CA and synthetic TQSL certificate round trips, dual-signature verification and replay rejection using generated RSA and Ed25519 keys. Its SQLite store atomically consumes a nonce and records the binding, survives reopen, rejects a mismatched key fingerprint, and supports disablement. Version 1 enrollment remains challenge-response-only; version 2 carries explicitly allowed purposes and can authorize content when the verifier opts in. The CLI content path checks that purpose along with certificate expiry and status age. RSA/SHA-1 is accepted only for the short-lived TQSL enrollment assertion, under explicit policy acknowledgement; ARAP content/challenge signatures remain Ed25519. The pinned CDDL 0.10.7 validator compiles the version 1 and version 2 enrollment challenges plus the response schema; both challenge vectors and all existing vectors validate. Real station-certificate and live status behavior remain final validation steps.
 
 After that validation snapshot, `arap enrollment issue` and
 `arap enrollment verify-response` were added. The latter queries TQSL's public
 LoTW certificate-status endpoint using TLS, cache-revalidation headers, and
-the response's `Date`/`Age` for evidence time. This addition has not yet been
-run through the validation suite or checked against a real LoTW certificate;
-it is implementation evidence only. TQSL signing, approved ARRL roots/policy,
-real certificate-chain/status validation, and the explicit RSA/SHA-1 decision
-remain unresolved. The CLI now discovers TQSL's local self-signed root bundle
-by default, but that path has not been checked with an enrollment response.
+the response's `Date`/`Age` for evidence time. Automated synthetic tests cover
+the status client and TQSL signing adapter. The CLI discovers TQSL's local
+self-signed root bundle by default. Root and status policy follows what TQSL
+and ARRL accept; real certificate-chain/status validation remains a final live
+test. The TQSL RSA/SHA-1 signature is accepted only for fresh enrollment
+authentication evidence, never for ARAP content or challenge signatures.
 
 The Keys & Trust tab now exposes enrollment challenge issue and response
 verification, including a default-off legacy-signature checkbox and a second
@@ -301,7 +301,7 @@ hosted CI remain release gates.
 
 ## Linux amd64 enrollment bundle (2026-10-20)
 
-`package-desktop.sh linux-amd64` now builds the native helper against pinned
+`package-desktop.sh linux-amd64` builds the native helper against pinned
 TrustedQSL 2.8.7 source revision `1916fc14a8cfc7f287742ae5a34aa986353d9df7`,
 places `arap-tqsl-sign`, `libtqsllib.so`, and the matching `config.xml` resource
 beside the ARAP executables, and includes the TQSLLIB redistribution license.
@@ -315,7 +315,9 @@ signing, verification, content signing, and authentication. The CI bundle job
 now installs build prerequisites, checks out the same pinned source, validates
 the archive and runs this extracted-helper demo. The Linux amd64 artifact was
 built and validated locally; hosted CI has not yet run on a release commit.
-Other OS/architecture bundles are explicitly preview-only for enrollment.
+The native matrix now builds Linux amd64/arm64, macOS amd64/arm64 and Windows
+amd64 enrollment bundles and runs their extracted helper flows on matching
+runners. Hosted results remain pending.
 
 ## Version reporting (2026-10-20)
 
