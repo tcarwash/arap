@@ -463,3 +463,10 @@ content, PixelQSO, challenge, endorsement and keyserver workflows, and
 `scripts/check-machine-interface.py` validated machine error envelopes against
 the live CLI. `make signing-demo` passed both content and PixelQSO paths. None
 of these local checks queried live LoTW status or used a station certificate.
+
+The CI security and parser-hardening checks were also run locally from this
+tree. All seven 10-second fuzz targets passed: content proof (92,937 executions),
+challenge request (19,270), challenge response (20,543), public-key/certificate
+(121,290), resolver reference (38,984), resolver lookup (17,450), and PixelQSO
+card JSON (80,753). `govulncheck` found no reachable vulnerabilities; it
+reported one advisory only in a required module with no affected call path.
